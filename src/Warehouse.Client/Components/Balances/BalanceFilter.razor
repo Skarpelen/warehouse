@@ -1,0 +1,98 @@
+﻿@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@using Warehouse.Shared.Filters
+@inject IApiAccess Api
+
+<MudPaper Class="pa-4 mb-4">
+    <MudGrid>
+        <MudItem xs="12" sm="4">
+            <MudSelect T="Guid"
+                       Label="Ресурс"
+                       @bind-Value="_selectedResource"
+                       Dense="true">
+                <MudSelectItem T="Guid" Value="Guid.Empty">
+                    Выбрать
+                </MudSelectItem>
+                @foreach (var resource in _resources)
+                {
+                    <MudSelectItem T="Guid" Value="@resource.Id">
+                        @resource.Name
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+
+        <MudItem xs="12" sm="4">
+            <MudSelect T="Guid"
+                       Label="Единица измерения"
+                       @bind-Value="_selectedUnit"
+                       Dense="true">
+                <MudSelectItem T="Guid" Value="Guid.Empty">
+                    Выбрать
+                </MudSelectItem>
+                @foreach (var unit in _units)
+                {
+                    <MudSelectItem T="Guid" Value="@unit.Id">
+                        @unit.Name
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+
+        <MudItem xs="12" sm="4" Class="d-flex align-center">
+            <MudButton Variant="Variant.Filled"
+                       OnClick="Apply"
+                       Disabled="_isLoading">
+                Применить
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public EventCallback<Shared.Filters.BalanceFilter> OnApply { get; set; }
+
+    private IEnumerable<ResourceDTO> _resources = new List<ResourceDTO>();
+    private IEnumerable<UnitDTO> _units = new List<UnitDTO>();
+    private Guid _selectedResource = Guid.Empty;
+    private Guid _selectedUnit = Guid.Empty;
+    private bool _isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+
+        var resResult = await Api.GetAllResources(false);
+
+        if (resResult.Result == ResultCode.Ok && resResult.Response != null)
+        {
+            _resources = resResult.Response;
+        }
+
+        var unitResult = await Api.GetAllUnits(false);
+
+        if (unitResult.Result == ResultCode.Ok && unitResult.Response != null)
+        {
+            _units = unitResult.Response;
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task Apply()
+    {
+        var filter = new Shared.Filters.BalanceFilter
+        {
+            ResourceIds = _selectedResource != Guid.Empty
+                          ? new List<Guid> { _selectedResource }
+                          : null,
+
+            UnitIds = _selectedUnit != Guid.Empty
+                      ? new List<Guid> { _selectedUnit }
+                      : null
+        };
+
+        await OnApply.InvokeAsync(filter);
+    }
+}

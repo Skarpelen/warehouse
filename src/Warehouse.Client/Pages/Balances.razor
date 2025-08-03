@@ -1,0 +1,50 @@
+﻿@page "/balances"
+@using Warehouse.Client.Components
+@using Warehouse.Client.Components.Balances
+@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@using Warehouse.Shared.Filters
+@inject IApiAccess Api
+@inject IToastService Toast
+
+<PageTitle>Баланс</PageTitle>
+
+<h3>Баланс</h3>
+
+@if (_isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <BalanceFilter OnApply="LoadBalances" />
+
+    <BalanceTable Balances="_balances" />
+}
+
+@code {
+    private bool _isLoading = true;
+    private IEnumerable<BalanceDTO> _balances = new List<BalanceDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBalances(new Shared.Filters.BalanceFilter());
+        _isLoading = false;
+    }
+
+    private async Task LoadBalances(Shared.Filters.BalanceFilter filter)
+    {
+        var result = await Api.GetAllBalances(filter);
+
+        if (result.Result == ResultCode.Ok && result.Response != null)
+        {
+            _balances = result.Response;
+        }
+        else
+        {
+            Toast.ShowError("Не удалось загрузить балансы");
+        }
+
+        StateHasChanged();
+    }
+}

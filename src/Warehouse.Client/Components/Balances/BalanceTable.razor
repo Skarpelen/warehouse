@@ -1,0 +1,28 @@
+﻿@using Warehouse.Shared.DTO
+
+<MudTable T="BalanceDTO" Items="Balances" Dense="true" Hover="true">
+    <HeaderContent>
+        <MudTh>Ресурс</MudTh>
+        <MudTh>Единица измерения</MudTh>
+        <MudTh>Количество</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Ресурс">
+            @context.Resource.Name
+        </MudTd>
+        <MudTd DataLabel="Единица измерения">
+            @context.Unit.Name
+        </MudTd>
+        <MudTd DataLabel="Количество">
+            @context.Quantity
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        Нет данных для отображения
+    </NoRecordsContent>
+</MudTable>
+
+@code {
+    [Parameter]
+    public IEnumerable<BalanceDTO> Balances { get; set; } = new List<BalanceDTO>();
+}

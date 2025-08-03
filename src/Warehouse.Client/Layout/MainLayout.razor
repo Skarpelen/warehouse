@@ -1,0 +1,85 @@
+﻿@using Blazored.LocalStorage
+@using Blazored.Toast
+@using Blazored.Toast.Configuration
+@inherits LayoutComponentBase
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
+
+<BlazoredToasts Position="ToastPosition.BottomRight"
+				Timeout="10"
+				IconType="IconType.FontAwesome"
+				SuccessClass="success-toast-override"
+				SuccessIcon="fa fa-thumbs-up"
+				ErrorIcon="fa fa-bug"
+				ShowProgressBar="true" />
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider FullWidth="true"
+				   MaxWidth="MaxWidth.Medium"
+				   BackdropClick="false"
+				   Position="DialogPosition.Center"
+				   CloseOnEscapeKey="true" />
+<MudBreakpointProvider OnBreakpointChanged="BreakpointChanged" />
+
+<MudLayout>
+	<MudDrawer @bind-Open="_drawerOpen"
+			   Elevation="1"
+			   Variant="@_drawerVariant"
+			   Breakpoint="Breakpoint.Md">
+		<NavMenu />
+	</MudDrawer>
+
+	<MudMainContent Class="d-flex flex-column min-vh-100">
+
+		<MudContainer MaxWidth="MaxWidth.Large" Class="py-4 flex-grow-1">
+			@Body
+		</MudContainer>
+
+		<Footer></Footer>
+	</MudMainContent>
+</MudLayout>
+
+<div id="blazor-error-ui" class="mud-typography-body2 pa-4">
+	An unhandled error has occurred.
+	<MudButton OnClick="@(() => NavigationManager.NavigateTo(NavigationManager.Uri, true))">
+		Reload
+	</MudButton>
+</div>
+
+@code
+{
+	private bool _drawerOpen;
+	private DrawerVariant _drawerVariant = DrawerVariant.Mini;
+	private bool _isMobile;
+
+	private async Task BreakpointChanged(Breakpoint breakpoint)
+	{
+		if (breakpoint < Breakpoint.Md)
+		{
+			_isMobile = true;
+			_drawerOpen = false;
+			_drawerVariant = DrawerVariant.Temporary;
+		}
+		else
+		{
+			_isMobile = false;
+			var cached = await LocalStorage.GetItemAsync<bool?>("drawerOpenState");
+
+			_drawerOpen = !cached.HasValue || cached.Value;
+			_drawerVariant = DrawerVariant.Mini;
+		}
+
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task ToggleDrawer()
+	{
+		_drawerOpen = !_drawerOpen;
+
+		if (!_isMobile)
+		{
+			await LocalStorage.SetItemAsync("drawerOpenState", _drawerOpen);
+		}
+	}
+}
