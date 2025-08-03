@@ -87,8 +87,6 @@ namespace Warehouse.Server
 
             app.UseCors("client");
             app.UseRouting();
-            app.UseAuthentication();
-            app.UseAuthorization();
 
             await DataAccessConfiguration.EnsureSeedData(app);
 

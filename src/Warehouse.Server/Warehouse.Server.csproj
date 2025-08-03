@@ -17,8 +17,14 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Warehouse.BusinessLogic\Warehouse.BusinessLogic.csproj" />
+	  <ProjectReference Include="..\Warehouse.Client\Warehouse.Client.csproj" />
 	  <ProjectReference Include="..\Warehouse.DataAccess\Warehouse.DataAccess.csproj" />
+	  <ProjectReference Include="..\Warehouse.Shared\Warehouse.Shared.csproj" />
 	  <ProjectReference Include="..\Warehouse.WebApi\Warehouse.WebApi.csproj" />
 	</ItemGroup>
+
+  <Target Name="PublishClient" AfterTargets="Build">
+    <Exec Command="dotnet publish &quot;..\Warehouse.Client\Warehouse.Client.csproj&quot; -c Release -o &quot;$(ProjectDir)wwwroot&quot;" />
+  </Target>
 
 </Project>
