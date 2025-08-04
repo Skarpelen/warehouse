@@ -1,0 +1,63 @@
+﻿@page "/receipts"
+@using Warehouse.Client.Components
+@using Warehouse.Client.Components.Receipts
+@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@using Warehouse.Shared.Filters
+@inject IApiAccess Api
+@inject NavigationManager Nav
+@inject IToastService Toast
+
+<PageTitle>Поступления</PageTitle>
+
+<h3>Поступления</h3>
+
+@if (_isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <ReceiptFiltersCollection OnApply="LoadReceipts"
+                   OnAdd="NavigateToForm" />
+
+    <ReceiptTable Receipts="_receipts"
+                  OnRowClick="NavigateToForm" />
+}
+
+@code {
+    private bool                               _isLoading = true;
+    private IEnumerable<SupplyDocumentDTO>     _receipts  = new List<SupplyDocumentDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReceipts(new DocumentFilter
+        {
+            DateFrom = DateTime.Today.AddDays(-7),
+            DateTo   = DateTime.Today.AddDays(7)
+        });
+
+        _isLoading = false;
+    }
+
+    private async Task LoadReceipts(DocumentFilter filter)
+    {
+        var result = await Api.GetAllSupplies(filter);
+
+        if (result.Result == ResultCode.Ok && result.Response != null)
+        {
+            _receipts = result.Response;
+        }
+        else
+        {
+            Toast.ShowError("Не удалось загрузить поступления");
+        }
+
+        StateHasChanged();
+    }
+
+    private void NavigateToForm(Guid id)
+    {
+        Nav.NavigateTo($"/receipts/form/{id}");
+    }
+}

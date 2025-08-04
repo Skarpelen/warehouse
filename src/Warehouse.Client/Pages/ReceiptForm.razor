@@ -1,0 +1,180 @@
+﻿@page "/receipts/form/{Id:guid}"
+@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@inject IApiAccess Api
+@inject IToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Поступление</PageTitle>
+
+<h3>Поступление</h3>
+
+<MudButton Variant="Variant.Filled"
+           OnClick="Save"
+           Disabled="_isSaving">
+    Сохранить
+</MudButton>
+
+<MudPaper Class="pa-4 mt-4">
+    <MudTextField T="string"
+                  Label="Номер"
+                  @bind-Value="_number" />
+    <MudDatePicker Label="Дата"
+                   @bind-Date="_date" />
+</MudPaper>
+
+<MudPaper Class="pa-4 mt-4">
+    <MudTable Items="_items"
+              Dense="true">
+        <HeaderContent>
+            <MudTh>
+                <MudButton Variant="Variant.Text"
+                           OnClick="AddRow"
+                           IconClass="@Icons.Material.Filled.Add" />
+            </MudTh>
+            <MudTh>Ресурс</MudTh>
+            <MudTh>Единица измерения</MudTh>
+            <MudTh>Количество</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Error"
+                           OnClick="@(() => RemoveRow(context))"
+                           IconClass="@Icons.Material.Filled.Close" />
+            </MudTd>
+            <MudTd>
+                <MudSelect T="Guid"
+                           @bind-Value="context.ResourceId"
+                           Dense="true">
+                    <MudSelectItem T="Guid" Value="Guid.Empty">
+                        Выбрать
+                    </MudSelectItem>
+                    @foreach (var r in _resources)
+                    {
+                        <MudSelectItem T="Guid" Value="@r.Id">
+                            @r.Name
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </MudTd>
+            <MudTd>
+                <MudSelect T="Guid"
+                           @bind-Value="context.Unit.Id"
+                           Dense="true">
+                    <MudSelectItem T="Guid" Value="Guid.Empty">
+                        Выбрать
+                    </MudSelectItem>
+                    @foreach (var u in _units)
+                    {
+                        <MudSelectItem T="Guid" Value="@u.Id">
+                            @u.Name
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </MudTd>
+            <MudTd>
+                <MudNumericField T="decimal"
+                                 @bind-Value="context.Quantity" />
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            Нет позиций
+        </NoRecordsContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private string _number = string.Empty;
+    private DateTime? _date = DateTime.Today;
+    private List<SupplyItemDTO> _items = new();
+    private IEnumerable<ResourceDTO> _resources = new List<ResourceDTO>();
+    private IEnumerable<UnitDTO> _units = new List<UnitDTO>();
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resResult = await Api.GetAllResources(false);
+
+        if (resResult.Result == ResultCode.Ok && resResult.Response != null)
+        {
+            _resources = resResult.Response;
+        }
+
+        var unitResult = await Api.GetAllUnits(false);
+
+        if (unitResult.Result == ResultCode.Ok && unitResult.Response != null)
+        {
+            _units = unitResult.Response;
+        }
+
+        if (Id != Guid.Empty)
+        {
+            var supRes = await Api.GetSupply(Id);
+
+            if (supRes.Result == ResultCode.Ok && supRes.Response != null)
+            {
+                var dto = supRes.Response;
+                _number = dto.Number;
+                _date = dto.Date;
+                _items = dto.Items
+                             .Select(i => new SupplyItemDTO
+                                 {
+                                     ResourceId = i.ResourceId,
+                                     Unit = i.Unit,
+                                     Quantity = i.Quantity
+                                 })
+                             .ToList();
+            }
+            else
+            {
+                Toast.ShowError("Не удалось загрузить поступление");
+            }
+        }
+    }
+
+    private void AddRow()
+    {
+        _items.Add(new SupplyItemDTO
+            {
+                ResourceId = Guid.Empty,
+                Unit = new UnitDTO(),
+                Quantity = 0
+            });
+    }
+
+    private void RemoveRow(SupplyItemDTO item)
+    {
+        _items.Remove(item);
+    }
+
+    private async Task Save()
+    {
+        _isSaving = true;
+
+        var dto = new SupplyDocumentDTO
+            {
+                Id = Id,
+                Number = _number,
+                Date = _date!.Value,
+                Items = _items
+            };
+
+        var result = Id == Guid.Empty
+            ? (await Api.Create(dto)).Result
+            : (await Api.Update(dto)).Result;
+
+        if (result == ResultCode.Ok)
+        {
+            Nav.NavigateTo("/receipts");
+        }
+        else
+        {
+            Toast.ShowError("Ошибка при сохранении");
+        }
+
+        _isSaving = false;
+    }
+}

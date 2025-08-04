@@ -17,7 +17,7 @@
 }
 else
 {
-    <BalanceFilter OnApply="LoadBalances" />
+    <BalanceFiltersCollection OnApply="LoadBalances" />
 
     <BalanceTable Balances="_balances" />
 }
@@ -28,11 +28,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadBalances(new Shared.Filters.BalanceFilter());
+        await LoadBalances(new BalanceFilter());
         _isLoading = false;
     }
 
-    private async Task LoadBalances(Shared.Filters.BalanceFilter filter)
+    private async Task LoadBalances(BalanceFilter filter)
     {
         var result = await Api.GetAllBalances(filter);
 

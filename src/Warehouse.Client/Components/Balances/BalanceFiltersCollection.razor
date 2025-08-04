@@ -51,7 +51,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<Shared.Filters.BalanceFilter> OnApply { get; set; }
+    public EventCallback<BalanceFilter> OnApply { get; set; }
 
     private IEnumerable<ResourceDTO> _resources = new List<ResourceDTO>();
     private IEnumerable<UnitDTO> _units = new List<UnitDTO>();
@@ -82,7 +82,7 @@
 
     private async Task Apply()
     {
-        var filter = new Shared.Filters.BalanceFilter
+        var filter = new BalanceFilter
         {
             ResourceIds = _selectedResource != Guid.Empty
                           ? new List<Guid> { _selectedResource }

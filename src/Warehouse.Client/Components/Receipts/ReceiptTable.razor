@@ -1,0 +1,39 @@
+﻿@using Warehouse.Shared.DTO
+@inject NavigationManager Nav
+
+<MudTable T="SupplyDocumentDTO"
+          Items="Receipts"
+          Dense="true"
+          Hover="true"
+          OnRowClick="x => OnRowClick.InvokeAsync(x.Item.Id)">
+    <HeaderContent>
+        <MudTh>Номер</MudTh>
+        <MudTh>Дата</MudTh>
+        <MudTh>Ресурс</MudTh>
+        <MudTh>Единица измерения</MudTh>
+        <MudTh>Количество</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Номер">@context.Number</MudTd>
+        <MudTd DataLabel="Дата">@context.Date.ToString("yyyy-MM-dd")</MudTd>
+        <MudTd DataLabel="Ресурс">
+            @((MarkupString)string.Join("<br/>", context.Items.Select(i => i.Resource.Name)))
+        </MudTd>
+        <MudTd DataLabel="Единица измерения">
+            @((MarkupString)string.Join("<br/>", context.Items.Select(i => i.Unit.Name)))
+        </MudTd>
+        <MudTd DataLabel="Количество">
+            @((MarkupString)string.Join("<br/>", context.Items.Select(i => i.Quantity)))
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        Нет данных для отображения
+    </NoRecordsContent>
+</MudTable>
+
+@code {
+    [Parameter]
+    public IEnumerable<SupplyDocumentDTO> Receipts { get; set; } = new List<SupplyDocumentDTO>();
+
+    [Parameter] public EventCallback<Guid> OnRowClick { get; set; }
+}

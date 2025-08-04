@@ -1,0 +1,148 @@
+﻿@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@using Warehouse.Shared.Filters
+@inject IApiAccess Api
+
+<MudPaper Class="pa-4 mb-4">
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudText Typo="Typo.subtitle2">Период</MudText>
+            <MudStack Row="true" Spacing="1">
+                <MudDatePicker Editable="true" @bind-Date="_dateFrom" Mask="@(new DateMask("dd.MM.yyyy"))" DateFormat="yyyy.MM.dd" Variant="Variant.Outlined" />
+                <MudDatePicker Editable="true" @bind-Date="_dateTo" Mask="@(new DateMask("dd.MM.yyyy"))" DateFormat="yyyy.MM.dd" Variant="Variant.Outlined" />
+            </MudStack>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="string"
+                       Label="Номер поступления"
+                       @bind-Value="_selectedNumber"
+                       Dense="true">
+                <MudSelectItem T="string" Value="string.Empty">
+                    Выбрать
+                </MudSelectItem>
+                @foreach (var num in _numbers)
+                {
+                    <MudSelectItem T="string" Value="@num">
+                        @num
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="Guid"
+                       Label="Ресурс"
+                       @bind-Value="_selectedResource"
+                       Dense="true">
+                <MudSelectItem T="Guid" Value="Guid.Empty">
+                    Выбрать
+                </MudSelectItem>
+                @foreach (var r in _resources)
+                {
+                    <MudSelectItem T="Guid" Value="@r.Id">
+                        @r.Name
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="Guid"
+                       Label="Единица измерения"
+                       @bind-Value="_selectedUnit"
+                       Dense="true">
+                <MudSelectItem T="Guid" Value="Guid.Empty">
+                    Выбрать
+                </MudSelectItem>
+                @foreach (var u in _units)
+                {
+                    <MudSelectItem T="Guid" Value="@u.Id">
+                        @u.Name
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudStack Row="true"
+                      Spacing="2"
+                      Class="mt-4">
+                <MudButton Variant="Variant.Filled"
+                           OnClick="Apply"
+                           Disabled="_isLoading">
+                    Применить
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           OnClick="@(() => OnAdd.InvokeAsync(Guid.Empty))">
+                    Добавить
+                </MudButton>
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter] public EventCallback<DocumentFilter> OnApply { get; set; }
+    [Parameter] public EventCallback<Guid> OnAdd { get; set; }
+
+    private DateTime? _dateFrom = DateTime.Today.AddDays(-7);
+    private DateTime? _dateTo = DateTime.Today.AddDays(7);
+    private string _selectedNumber = string.Empty;
+    private Guid _selectedResource;
+    private Guid _selectedUnit;
+    private IEnumerable<string> _numbers = new List<string>();
+    private IEnumerable<ResourceDTO> _resources = new List<ResourceDTO>();
+    private IEnumerable<UnitDTO> _units = new List<UnitDTO>();
+    private bool _isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+
+        var supRes = await Api.GetAllSupplies(new DocumentFilter());
+
+        if (supRes.Result == ResultCode.Ok && supRes.Response != null)
+        {
+            _numbers = supRes.Response
+                        .Select(x => x.Number)
+                        .Distinct();
+        }
+
+        var resRes = await Api.GetAllResources(false);
+
+        if (resRes.Result == ResultCode.Ok && resRes.Response != null)
+        {
+            _resources = resRes.Response;
+        }
+
+        var unitRes = await Api.GetAllUnits(false);
+
+        if (unitRes.Result == ResultCode.Ok && unitRes.Response != null)
+        {
+            _units = unitRes.Response;
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task Apply()
+    {
+        var filter = new DocumentFilter
+            {
+                DateFrom = _dateFrom,
+                DateTo = _dateTo,
+                Numbers = !string.IsNullOrEmpty(_selectedNumber)
+                              ? new List<string> { _selectedNumber }
+                              : null,
+                ResourceIds = _selectedResource != Guid.Empty
+                              ? new List<Guid> { _selectedResource }
+                              : null,
+                UnitIds = _selectedUnit != Guid.Empty
+                              ? new List<Guid> { _selectedUnit }
+                              : null
+            };
+
+        await OnApply.InvokeAsync(filter);
+    }
+}
