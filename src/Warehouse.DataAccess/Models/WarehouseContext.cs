@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+
 namespace Warehouse.DataAccess.Models
 {
     using Warehouse.BusinessLogic.Models;

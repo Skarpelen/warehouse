@@ -1,5 +1,7 @@
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using NLog;
 
 namespace Warehouse.Server
@@ -8,6 +10,7 @@ namespace Warehouse.Server
     using Warehouse.BusinessLogic.Repository;
     using Warehouse.BusinessLogic.Services;
     using Warehouse.DataAccess.Repository;
+    using Warehouse.WebApi.V1;
 
     public class Program
     {
@@ -40,6 +43,20 @@ namespace Warehouse.Server
                 builder.Configuration);
 
             builder.ConfigureDatabase();
+
+            builder.Logging.ClearProviders();
+
+            var controllersBuilder = builder.Services.AddControllers();
+            controllersBuilder.PartManager.ApplicationParts.Add(new AssemblyPart(typeof(ClientController).Assembly));
+            controllersBuilder
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.PropertyNamingPolicy = null;
+                })
+                .AddMvcOptions(options =>
+                {
+                    options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
+                });
 
             builder.Services.AddHttpContextAccessor();
 
