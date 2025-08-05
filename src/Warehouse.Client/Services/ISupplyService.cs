@@ -11,8 +11,8 @@
     {
         Task<GetSuppliesResult> GetAllSupplies(DocumentFilter filter);
         Task<GetSupplyResult> GetSupply(Guid id);
-        Task<CreateSupplyResult> Create(SupplyDocumentDTO dto);
-        Task<ActionResult> Update(SupplyDocumentDTO dto);
-        Task<ActionResult> Delete(Guid id);
+        Task<CreateSupplyResult> CreateSupply(SupplyDocumentDTO dto);
+        Task<ActionResult> UpdateSupply(SupplyDocumentDTO dto);
+        Task<ActionResult> DeleteSupply(Guid id);
     }
 }

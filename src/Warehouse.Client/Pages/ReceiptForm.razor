@@ -163,8 +163,8 @@
             };
 
         var result = Id == Guid.Empty
-            ? (await Api.Create(dto)).Result
-            : (await Api.Update(dto)).Result;
+            ? (await Api.CreateSupply(dto)).Result
+            : (await Api.UpdateSupply(dto)).Result;
 
         if (result == ResultCode.Ok)
         {

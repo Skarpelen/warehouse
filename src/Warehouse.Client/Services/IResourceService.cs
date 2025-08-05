@@ -10,8 +10,8 @@
     {
         Task<GetResourcesResult> GetAllResources(bool includeArchived = false);
         Task<GetResourceResult> GetResource(Guid id);
-        Task<CreateResourceResult> Create(ResourceDTO dto);
-        Task<ActionResult> Update(ResourceDTO dto);
-        Task<ActionResult> Archive(Guid id);
+        Task<CreateResourceResult> CreateResource(ResourceDTO dto);
+        Task<ActionResult> UpdateResource(ResourceDTO dto);
+        Task<ActionResult> ArchiveResource(Guid id);
     }
 }

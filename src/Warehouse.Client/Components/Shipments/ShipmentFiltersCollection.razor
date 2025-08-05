@@ -1,0 +1,126 @@
+﻿@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@using Warehouse.Shared.Filters
+@inject IApiAccess Api
+
+<MudPaper Class="pa-4 mb-4">
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudText Typo="Typo.subtitle2">Период</MudText>
+            <MudStack Row="true" Spacing="1">
+                <MudDatePicker Editable="true" @bind-Date="_dateFrom" Mask="@(new DateMask("dd.MM.yyyy"))" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" />
+                <MudDatePicker Editable="true" @bind-Date="_dateTo" Mask="@(new DateMask("dd.MM.yyyy"))" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" />
+            </MudStack>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="string" Label="Номер отгрузки" @bind-Value="_selectedNumber" Dense="true">
+                <MudSelectItem T="string" Value="string.Empty">Выбрать</MudSelectItem>
+                @foreach (var num in _numbers)
+                {
+                    <MudSelectItem T="string" Value="@num">@num</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="2">
+            <MudSelect T="Guid" Label="Клиент" @bind-Value="_selectedClient" Dense="true">
+                <MudSelectItem T="Guid" Value="Guid.Empty">Выбрать</MudSelectItem>
+                @foreach (var c in _clients)
+                {
+                    <MudSelectItem T="Guid" Value="@c.Id">@c.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="2">
+            <MudSelect T="Guid" Label="Ресурс" @bind-Value="_selectedResource" Dense="true">
+                <MudSelectItem T="Guid" Value="Guid.Empty">Выбрать</MudSelectItem>
+                @foreach (var r in _resources)
+                {
+                    <MudSelectItem T="Guid" Value="@r.Id">@r.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="2">
+            <MudSelect T="Guid" Label="Ед. измерения" @bind-Value="_selectedUnit" Dense="true">
+                <MudSelectItem T="Guid" Value="Guid.Empty">Выбрать</MudSelectItem>
+                @foreach (var u in _units)
+                {
+                    <MudSelectItem T="Guid" Value="@u.Id">@u.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12">
+            <MudStack Row="true" Spacing="2" Class="mt-4">
+                <MudButton Variant="Variant.Filled" OnClick="Apply" Disabled="_isLoading">Применить</MudButton>
+                <MudButton Variant="Variant.Filled" OnClick="() => OnAdd.InvokeAsync(Guid.Empty)">Добавить</MudButton>
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter] public EventCallback<DocumentFilter> OnApply { get; set; }
+    [Parameter] public EventCallback<Guid> OnAdd { get; set; }
+
+    private DateTime? _dateFrom = DateTime.Today.AddDays(-7);
+    private DateTime? _dateTo = DateTime.Today.AddDays(7);
+    private string _selectedNumber = string.Empty;
+    private Guid _selectedClient = Guid.Empty;
+    private Guid _selectedResource = Guid.Empty;
+    private Guid _selectedUnit = Guid.Empty;
+
+    private IEnumerable<string> _numbers = Array.Empty<string>();
+    private IEnumerable<ClientDTO> _clients = Array.Empty<ClientDTO>();
+    private IEnumerable<ResourceDTO> _resources = Array.Empty<ResourceDTO>();
+    private IEnumerable<UnitDTO> _units = Array.Empty<UnitDTO>();
+
+    private bool _isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+
+        var docRes = await Api.GetAllShipments(new DocumentFilter());
+
+        if (docRes.Result == ResultCode.Ok && docRes.Response is not null)
+        {
+            _numbers = docRes.Response.Select(x => x.Number).Distinct();
+        }
+
+        var clientRes = await Api.GetClients(false);
+
+        if (clientRes.Result == ResultCode.Ok && clientRes.Response is not null)
+        {
+            _clients = clientRes.Response;
+        }
+
+        var resRes = await Api.GetAllResources(false);
+
+        if (resRes.Result == ResultCode.Ok && resRes.Response is not null)
+        {
+            _resources = resRes.Response;
+        }
+
+        var unitRes = await Api.GetAllUnits(false);
+
+        if (unitRes.Result == ResultCode.Ok && unitRes.Response is not null)
+        {
+            _units = unitRes.Response;
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task Apply()
+    {
+        var filter = new DocumentFilter
+        {
+            DateFrom = _dateFrom,
+            DateTo = _dateTo,
+            Numbers = !string.IsNullOrEmpty(_selectedNumber) ? new List<string> { _selectedNumber } : null,
+            ResourceIds = _selectedResource != Guid.Empty ? new List<Guid> { _selectedResource } : null,
+            UnitIds = _selectedUnit != Guid.Empty ? new List<Guid> { _selectedUnit } : null
+        };
+
+        await OnApply.InvokeAsync(filter);
+    }
+}

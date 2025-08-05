@@ -1,0 +1,111 @@
+﻿@using Warehouse.Client.Services
+@typeparam TDto
+@inject NavigationManager Nav
+@inject IToastService Toast
+
+
+<PageTitle>@Title</PageTitle>
+<h3>@Title</h3>
+<MudStack Row="true" Spacing="2" Class="mb-4">
+    <MudButton Variant="Variant.Filled" OnClick="Save" Disabled="_isBusy">Сохранить</MudButton>
+    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="Delete" Disabled="_isBusy">Удалить</MudButton>
+    <MudButton Variant="Variant.Outlined" OnClick="Archive" Disabled="_isBusy">В архив</MudButton>
+</MudStack>
+<MudPaper Class="pa-4">
+    @Template(Model)
+</MudPaper>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public Guid Id { get; set; }
+    [Parameter] public Func<Guid, Task<(ResultCode, TDto?)>> LoadFunc { get; set; } = _ => throw new InvalidOperationException();
+    [Parameter] public Func<TDto, Task<ResultCode>> SaveFunc { get; set; } = _ => throw new InvalidOperationException();
+    [Parameter] public Func<Guid, Task<ResultCode>> DeleteFunc { get; set; } = _ => throw new InvalidOperationException();
+    [Parameter] public Func<Guid, Task<ResultCode>> ArchiveFunc { get; set; } = _ => throw new InvalidOperationException();
+    [Parameter] public string ReturnUrl { get; set; } = string.Empty;
+    [Parameter] public RenderFragment<TDto> Template { get; set; } = _ => null!;
+
+    private TDto Model = default!;
+    private bool _isBusy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != Guid.Empty)
+        {
+            var (code, data) = await LoadFunc(Id);
+
+            if (code == ResultCode.Ok && data is not null)
+            {
+                Model = data;
+            }
+            else
+            {
+                Toast.ShowError($"Не удалось загрузить {Title.ToLower()}");
+            }
+        }
+        else
+        {
+            Model = Activator.CreateInstance<TDto>()!;
+        }
+    }
+
+    private async Task Save()
+    {
+        _isBusy = true;
+        var code = await SaveFunc(Model);
+
+        if (code == ResultCode.Ok)
+        {
+            Nav.NavigateTo(ReturnUrl);
+        }
+        else
+        {
+            Toast.ShowError("Ошибка при сохранении");
+        }
+
+        _isBusy = false;
+    }
+
+    private async Task Delete()
+    {
+        if (Id == Guid.Empty)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        var code = await DeleteFunc(Id);
+
+        if (code == ResultCode.Ok)
+        {
+            Nav.NavigateTo(ReturnUrl);
+        }
+        else
+        {
+            Toast.ShowError("Ошибка при удалении");
+        }
+        _isBusy = false;
+    }
+
+    private async Task Archive()
+    {
+        if (Id == Guid.Empty)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        var code = await ArchiveFunc(Id);
+
+        if (code == ResultCode.Ok)
+        {
+            Nav.NavigateTo($"{ReturnUrl}/archive");
+        }
+        else
+        {
+            Toast.ShowError("Ошибка при архивацией");
+        }
+
+        _isBusy = false;
+    }
+}

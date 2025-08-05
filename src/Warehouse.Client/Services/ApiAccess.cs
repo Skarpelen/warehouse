@@ -286,19 +286,19 @@ namespace Warehouse.Client.Services
             return new GetResourceResult(code, dto);
         }
 
-        public async Task<CreateResourceResult> Create(ResourceDTO dto)
+        public async Task<CreateResourceResult> CreateResource(ResourceDTO dto)
         {
             var (code, resource) = await PostAsync<ResourceDTO, ResourceDTO>("resource", dto);
             return new CreateResourceResult(code, resource);
         }
 
-        public async Task<ActionResult> Update(ResourceDTO dto)
+        public async Task<ActionResult> UpdateResource(ResourceDTO dto)
         {
             var code = await PutAsync($"resource/{dto.Id}", dto);
             return new ActionResult(code);
         }
 
-        public async Task<ActionResult> Archive(Guid id)
+        public async Task<ActionResult> ArchiveResource(Guid id)
         {
             var code = await DeleteAsync($"resource/{id}");
             return new ActionResult(code);
@@ -317,31 +317,31 @@ namespace Warehouse.Client.Services
             return new GetShipmentResult(code, doc);
         }
 
-        public async Task<CreateShipmentResult> Create(ShipmentDocumentDTO dto)
+        public async Task<CreateShipmentResult> CreateShipment(ShipmentDocumentDTO dto)
         {
             var (code, shipment) = await PostAsync<ShipmentDocumentDTO, ShipmentDocumentDTO>("shipment", dto);
             return new CreateShipmentResult(code, shipment);
         }
 
-        public async Task<ActionResult> Update(ShipmentDocumentDTO dto)
+        public async Task<ActionResult> UpdateShipment(ShipmentDocumentDTO dto)
         {
             var code = await PutAsync($"shipment/{dto.Id}", dto);
             return new ActionResult(code);
         }
 
-        public async Task<ActionResult> Delete(Guid id)
+        public async Task<ActionResult> DeleteShipment(Guid id)
         {
             var code = await DeleteAsync($"shipment/{id}");
             return new ActionResult(code);
         }
 
-        public async Task<ActionResult> Sign(Guid id)
+        public async Task<ActionResult> SignShipment(Guid id)
         {
             var code = await PostAsync($"shipment/{id}/sign", string.Empty);
             return new ActionResult(code);
         }
 
-        public async Task<ActionResult> Revoke(Guid id)
+        public async Task<ActionResult> RevokeShipment(Guid id)
         {
             var code = await PostAsync($"shipment/{id}/revoke", string.Empty);
             return new ActionResult(code);
@@ -360,13 +360,13 @@ namespace Warehouse.Client.Services
             return new GetSupplyResult(code, supply);
         }
 
-        public async Task<CreateSupplyResult> Create(SupplyDocumentDTO dto)
+        public async Task<CreateSupplyResult> CreateSupply(SupplyDocumentDTO dto)
         {
             var (code, supply) = await PostAsync<SupplyDocumentDTO, SupplyDocumentDTO>("supply", dto);
             return new CreateSupplyResult(code, supply);
         }
 
-        public async Task<ActionResult> Update(SupplyDocumentDTO dto)
+        public async Task<ActionResult> UpdateSupply(SupplyDocumentDTO dto)
         {
             var code = await PutAsync($"supply/{dto.Id}", dto);
             return new ActionResult(code);
@@ -391,13 +391,13 @@ namespace Warehouse.Client.Services
             return new GetUnitResult(code, unit);
         }
 
-        public async Task<CreateUnitResult> Create(UnitDTO dto)
+        public async Task<CreateUnitResult> CreateUnit(UnitDTO dto)
         {
             var (code, unit) = await PostAsync<UnitDTO, UnitDTO>("unit", dto);
             return new CreateUnitResult(code, unit);
         }
 
-        public async Task<ActionResult> Update(UnitDTO dto)
+        public async Task<ActionResult> UpdateUnit(UnitDTO dto)
         {
             var code = await PutAsync($"unit/{dto.Id}", dto);
             return new ActionResult(code);

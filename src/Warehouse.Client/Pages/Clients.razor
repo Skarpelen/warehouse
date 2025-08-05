@@ -1,0 +1,56 @@
+﻿@page "/clients"
+@using Warehouse.Client.Components
+@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@inject IApiAccess Api
+@inject NavigationManager Nav
+@inject IToastService Toast
+
+<PageTitle>Клиенты</PageTitle>
+
+<h3>Клиенты</h3>
+
+<MudStack Row="true" Spacing="2" Class="mb-4">
+    <MudButton Variant="Variant.Filled" OnClick='() => Nav.NavigateTo("clients/form/00000000-0000-0000-0000-000000000000")'>Добавить</MudButton>
+    <MudButton Variant="Variant.Outlined" OnClick='() => Nav.NavigateTo("/clients/archive")'>К архиву</MudButton>
+</MudStack>
+
+@if (_isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <MudTable T="ClientDTO" Items="_clients" Dense="true" Hover="true" OnRowClick='e => Nav.NavigateTo($"/clients/form/{e.Item.Id}")'>
+        <HeaderContent>
+            <MudTh>Наименование</MudTh>
+            <MudTh>Адрес</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.Address</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>Нет клиентов</NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    private IEnumerable<ClientDTO> _clients = Array.Empty<ClientDTO>();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await Api.GetClients(false);
+
+        if (res.Result == ResultCode.Ok && res.Response is not null)
+        {
+            _clients = res.Response;
+        }
+        else
+        {
+            Toast.ShowError("Не удалось загрузить клиентов");
+        }
+        
+        _isLoading = false;
+    }
+}

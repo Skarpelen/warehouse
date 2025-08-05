@@ -10,8 +10,8 @@
     {
         Task<GetUnitsResult> GetAllUnits(bool includeArchived = false);
         Task<GetUnitResult> GetUnit(Guid id);
-        Task<CreateUnitResult> Create(UnitDTO dto);
-        Task<ActionResult> Update(UnitDTO dto);
-        Task<ActionResult> Archive(Guid id);
+        Task<CreateUnitResult> CreateUnit(UnitDTO dto);
+        Task<ActionResult> UpdateUnit(UnitDTO dto);
+        Task<ActionResult> ArchiveUnit(Guid id);
     }
 }

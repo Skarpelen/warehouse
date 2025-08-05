@@ -1,0 +1,63 @@
+﻿@page "/resources"
+@using Warehouse.Client.Components
+@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@inject IApiAccess Api
+@inject NavigationManager Nav
+@inject IToastService Toast
+
+<PageTitle>Ресурсы</PageTitle>
+
+<h3>Ресурсы</h3>
+
+<MudStack Row="true" Spacing="2" Class="mb-4">
+    <MudButton Variant="Variant.Filled"
+               OnClick='() => Nav.NavigateTo("/resources/form/00000000-0000-0000-0000-000000000000")'>
+        Добавить
+    </MudButton>
+    <MudButton Variant="Variant.Outlined"
+               OnClick='() => Nav.NavigateTo("/resources/archive")'>
+        К архиву
+    </MudButton>
+</MudStack>
+
+@if (_isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <MudTable T="ResourceDTO" Items="_resources" Dense="true" Hover="true"
+              OnRowClick='e => Nav.NavigateTo($"/resources/form/{e.Item.Id}")'>
+        <HeaderContent>
+            <MudTh>Наименование</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            Нет ресурсов
+        </NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    private IEnumerable<ResourceDTO> _resources = Array.Empty<ResourceDTO>();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await Api.GetAllResources(false);
+
+        if (res.Result == ResultCode.Ok && res.Response is not null)
+        {
+            _resources = res.Response;
+        }
+        else
+        {
+            Toast.ShowError("Не удалось загрузить ресурсы");
+        }
+
+        _isLoading = false;
+    }
+}

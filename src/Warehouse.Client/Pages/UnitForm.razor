@@ -1,0 +1,24 @@
+﻿@page "/units/form/{Id:guid}"
+@using Warehouse.Client.Components
+@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@inject IApiAccess Api
+
+<CrudForm TDto="UnitDTO"
+                   Title="Единица измерения"
+                   Id="@Id"
+                   ReturnUrl="/units"
+                   LoadFunc="async id => await Api.GetUnit(id).ContinueWith(t => (t.Result.Result, t.Result.Response))"
+                   SaveFunc="async dto => (Id == Guid.Empty
+                                           ? (await Api.CreateUnit(dto)).Result
+                                           : (await Api.UpdateUnit(dto)).Result)"
+                   DeleteFunc="async id => (await Api.ArchiveUnit(id)).Result"
+                   ArchiveFunc="async id => (await Api.ArchiveUnit(id)).Result">
+    <Template Context="model">
+        <MudTextField Label="Наименование" @bind-Value="model.Name" />
+    </Template>
+</CrudForm>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+}

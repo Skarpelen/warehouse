@@ -1,0 +1,165 @@
+﻿@page "/shipments/form/{Id:guid}"
+@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@using Warehouse.Shared.Filters
+@inject IApiAccess Api
+@inject NavigationManager Nav
+@inject IToastService Toast
+
+<PageTitle>Отгрузка</PageTitle>
+
+<h3>Отгрузка</h3>
+
+@if (Id == Guid.Empty && _isLoading)
+{
+    <MudText>Загрузка...</MudText>
+}
+else
+{
+    <MudStack Row="true" Spacing="2" Class="mb-4">
+        <MudButton Variant="Variant.Filled" OnClick="Save" Disabled="_isSaving">Сохранить</MudButton>
+        <MudButton Variant="Variant.Outlined" OnClick="SaveAndSign" Disabled="_isSaving">Сохранить и подписать</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="Delete" Disabled="_isSaving">Удалить</MudButton>
+    </MudStack>
+
+    <MudPaper Class="pa-4 mb-4">
+        <MudTextField T="string" Label="Номер" @bind-Value="_number" />
+        <MudSelect T="Guid" Label="Клиент" @bind-Value="_clientId" Dense="true">
+            <MudSelectItem T="Guid" Value="Guid.Empty">Выбрать</MudSelectItem>
+            @foreach (var c in _clients)
+            {
+                <MudSelectItem T="Guid" Value="@c.Id">@c.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudDatePicker Label="Дата" @bind-Date="_date" />
+    </MudPaper>
+
+    <MudPaper Class="pa-4">
+        <MudTable Items="_items" Dense="true">
+            <HeaderContent>
+                <MudTh>Ресурс</MudTh>
+                <MudTh>Ед. изм.</MudTh>
+                <MudTh>Количество</MudTh>
+                <MudTh>Доступно</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Resource.Name</MudTd>
+                <MudTd>@context.Unit.Name</MudTd>
+                <MudTd>
+                    <MudNumericField T="decimal" @bind-Value="context.Quantity" />
+                </MudTd>
+                <MudTd>@GetAvailable(context)</MudTd>
+            </RowTemplate>
+            <NoRecordsContent>Нет позиций</NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private string _number = string.Empty;
+    private DateTime? _date = DateTime.Today;
+    private Guid _clientId;
+    private List<ShipmentItemDTO> _items = new();
+    private IEnumerable<ClientDTO> _clients = Array.Empty<ClientDTO>();
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var clientRes = await Api.GetClients(false);
+
+        if (clientRes.Result == ResultCode.Ok && clientRes.Response is not null)
+        {
+            _clients = clientRes.Response;
+        }
+
+        if (Id != Guid.Empty)
+        {
+            var resp = await Api.GetShipment(Id);
+
+            if (resp.Result == ResultCode.Ok && resp.Response is not null)
+            {
+                var dto = resp.Response;
+                _number = dto.Number;
+                _clientId = dto.ClientId;
+                _date = dto.Date;
+                _items = dto.Items;
+            }
+            else
+            {
+                Toast.ShowError("Не удалось загрузить отгрузку");
+            }
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task Save()
+    {
+        _isSaving = true;
+        var dto = new ShipmentDocumentDTO
+        {
+            Id = Id,
+            Number = _number,
+            ClientId = _clientId,
+            Date = _date.Value,
+            Items = _items
+        };
+
+        ResultCode result;
+
+        if (Id == Guid.Empty)
+        {
+            var createRes = await Api.CreateShipment(dto);
+            result = createRes.Result;
+        }
+        else
+        {
+            var updateRes = await Api.UpdateShipment(dto);
+            result = updateRes.Result;
+        }
+
+        if (result == ResultCode.Ok)
+        {
+            Nav.NavigateTo("/shipments");
+        }
+        else
+        {
+            Toast.ShowError("Ошибка при сохранении");
+        }
+
+        _isSaving = false;
+    }
+
+    private async Task SaveAndSign()
+    {
+        await Save();
+
+        if (Id != Guid.Empty)
+        {
+            var signRes = await Api.SignShipment(Id);
+
+            if (signRes.Result != ResultCode.Ok)
+            {
+                Toast.ShowError("Ошибка при подписи");
+            }
+        }
+    }
+
+    private async Task Delete()
+    {
+        if (Id != Guid.Empty)
+        {
+            await Api.DeleteShipment(Id);
+            Nav.NavigateTo("/shipments");
+        }
+    }
+
+    private decimal GetAvailable(ShipmentItemDTO item)
+    {
+        var balResult = Api.GetAllBalances(new BalanceFilter { ResourceIds = new[] { item.ResourceId }, UnitIds = new[] { item.UnitOfMeasureId } }).Result;
+        return balResult.Response?.FirstOrDefault()?.Quantity ?? 0;
+    }
+}

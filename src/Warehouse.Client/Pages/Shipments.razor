@@ -1,0 +1,61 @@
+﻿@page "/shipments"
+@using Warehouse.Client.Components
+@using Warehouse.Client.Components.Shipments
+@using Warehouse.Client.Services
+@using Warehouse.Shared.DTO
+@using Warehouse.Shared.Filters
+@inject IApiAccess Api
+@inject NavigationManager Nav
+@inject IToastService Toast
+
+<PageTitle>Отгрузки</PageTitle>
+
+<h3>Отгрузки</h3>
+
+@if (_isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <ShipmentFiltersCollection OnApply="LoadShipments" OnAdd="NavigateToForm" />
+
+    <ShipmentTable Shipments="_shipments" OnRowClick="NavigateToForm" />
+}
+
+@code {
+    private bool _isLoading = true;
+    private IEnumerable<ShipmentDocumentDTO> _shipments = Array.Empty<ShipmentDocumentDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadShipments(new DocumentFilter
+        {
+            DateFrom = DateTime.Today.AddDays(-7),
+            DateTo = DateTime.Today.AddDays(7)
+        });
+
+        _isLoading = false;
+    }
+
+    private async Task LoadShipments(DocumentFilter filter)
+    {
+        var result = await Api.GetAllShipments(filter);
+
+        if (result.Result == ResultCode.Ok && result.Response is not null)
+        {
+            _shipments = result.Response;
+        }
+        else
+        {
+            Toast.ShowError("Не удалось загрузить отгрузки");
+        }
+
+        StateHasChanged();
+    }
+
+    private void NavigateToForm(Guid id)
+    {
+        Nav.NavigateTo($"/shipments/form/{id}");
+    }
+}

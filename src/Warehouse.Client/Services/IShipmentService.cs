@@ -11,10 +11,10 @@
     {
         Task<GetShipmentsResult> GetAllShipments(DocumentFilter filter);
         Task<GetShipmentResult> GetShipment(Guid id);
-        Task<CreateShipmentResult> Create(ShipmentDocumentDTO dto);
-        Task<ActionResult> Update(ShipmentDocumentDTO dto);
-        Task<ActionResult> Delete(Guid id);
-        Task<ActionResult> Sign(Guid id);
-        Task<ActionResult> Revoke(Guid id);
+        Task<CreateShipmentResult> CreateShipment(ShipmentDocumentDTO dto);
+        Task<ActionResult> UpdateShipment(ShipmentDocumentDTO dto);
+        Task<ActionResult> DeleteShipment(Guid id);
+        Task<ActionResult> SignShipment(Guid id);
+        Task<ActionResult> RevokeShipment(Guid id);
     }
 }
