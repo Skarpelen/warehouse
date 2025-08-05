@@ -23,4 +23,8 @@
 	  <ProjectReference Include="..\Warehouse.WebApi\Warehouse.WebApi.csproj" />
 	</ItemGroup>
 
+  <Target Name="PublishClient" AfterTargets="Build">
+    <Exec Command="dotnet publish &quot;..\Warehouse.Client\Warehouse.Client.csproj&quot; -c Release -o &quot;$(ProjectDir)wwwroot&quot;" />
+  </Target>
+
 </Project>

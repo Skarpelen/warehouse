@@ -127,10 +127,7 @@ namespace Warehouse.Server
 
             app.UseHttpsRedirection();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.MapControllers();
 
             app.MapFallbackToFile("index.html");
 
