@@ -8,8 +8,8 @@
         <MudItem xs="12" sm="6" md="3">
             <MudText Typo="Typo.subtitle2">Период</MudText>
             <MudStack Row="true" Spacing="1">
-                <MudDatePicker Editable="true" @bind-Date="_dateFrom" Mask="@(new DateMask("dd.MM.yyyy"))" DateFormat="yyyy.MM.dd" Variant="Variant.Outlined" />
-                <MudDatePicker Editable="true" @bind-Date="_dateTo" Mask="@(new DateMask("dd.MM.yyyy"))" DateFormat="yyyy.MM.dd" Variant="Variant.Outlined" />
+                <MudDatePicker Editable="true" @bind-Date="_dateFrom" Mask="@(new DateMask("dd.MM.yyyy"))" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" />
+                <MudDatePicker Editable="true" @bind-Date="_dateTo" Mask="@(new DateMask("dd.MM.yyyy"))" DateFormat="dd.MM.yyyy" Variant="Variant.Outlined" />
             </MudStack>
         </MudItem>
 
