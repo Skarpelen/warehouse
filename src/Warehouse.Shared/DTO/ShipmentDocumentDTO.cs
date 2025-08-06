@@ -1,13 +1,25 @@
-﻿namespace Warehouse.Shared.DTO
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Warehouse.Shared.DTO
 {
     public class ShipmentDocumentDTO
     {
         public Guid Id { get; set; }
-        public string Number { get; set; }
+
+        [Required(ErrorMessage = "Номер обязателен")]
+        public string Number { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Клиент обязателен")]
         public Guid ClientId { get; set; }
-        public DateTime Date { get; set; }
+
+        [Required(ErrorMessage = "Дата обязательна")]
+        public DateTimeOffset Date { get; set; }
+
         public ShipmentStatus Status { get; set; }
-        public ClientDTO Client { get; set; }
-        public List<ShipmentItemDTO> Items { get; set; }
+
+        public ClientDTO Client { get; set; } = new ClientDTO();
+
+        [MinLength(1, ErrorMessage = "Должна быть хотя бы одна позиция")]
+        public List<ShipmentItemDTO> Items { get; set; } = new List<ShipmentItemDTO>();
     }
 }

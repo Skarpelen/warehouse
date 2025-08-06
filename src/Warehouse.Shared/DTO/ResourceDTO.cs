@@ -1,9 +1,14 @@
-﻿namespace Warehouse.Shared.DTO
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Warehouse.Shared.DTO
 {
     public class ResourceDTO
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
-        public bool IsDeleted { get; set; }
+
+        [Required(ErrorMessage = "Название ресурса обязательно")]
+        public string Name { get; set; } = string.Empty;
+
+        public bool IsArchived { get; set; }
     }
 }
