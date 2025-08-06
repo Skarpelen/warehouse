@@ -10,5 +10,8 @@ namespace Warehouse.BusinessLogic.Models
 
         [Column("address")]
         public string Address { get; set; }
+
+        [Column("is_archived")]
+        public bool IsArchived { get; set; }
     }
 }

@@ -4,7 +4,6 @@ namespace Warehouse.BusinessLogic.Services
 {
     using Warehouse.BusinessLogic.Models;
     using Warehouse.BusinessLogic.Repository;
-    using Warehouse.Shared;
     using Warehouse.Shared.Filters;
 
     public interface IResourceService
@@ -14,7 +13,9 @@ namespace Warehouse.BusinessLogic.Services
         Task<IEnumerable<Resource>> GetAllAsync(bool includeArchived = false);
         Task<IEnumerable<Resource>> GetFilteredAsync(ResourceFilter filter);
         Task UpdateAsync(Guid id, Resource newResource);
+        Task DeleteAsync(Guid id);
         Task ArchiveAsync(Guid id);
+        Task UnarchiveAsync(Guid id);
     }
 
     public class ResourceService(IUnitOfWork unitOfWork) : IResourceService
@@ -78,7 +79,6 @@ namespace Warehouse.BusinessLogic.Services
             }
 
             old.Name = newResource.Name;
-            old.IsDeleted = newResource.IsDeleted;
 
             await unitOfWork.Resources.Update(old);
             await unitOfWork.CompleteAsync();
@@ -86,20 +86,56 @@ namespace Warehouse.BusinessLogic.Services
             _log.Info($"Updated resource [Id={id}].");
         }
 
-        public async Task ArchiveAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
             var resource = await GetByIdAsync(id);
 
             if (resource.IsDeleted)
             {
-                _log.Warn($"Already archived [Id={id}].");
+                _log.Warn($"Resource already deleted [Id={id}].");
                 return;
             }
 
             await unitOfWork.Resources.SoftDelete(id);
             await unitOfWork.CompleteAsync();
 
+            _log.Info($"Deleted resource [Id={id}].");
+        }
+
+        public async Task ArchiveAsync(Guid id)
+        {
+            var resource = await GetByIdAsync(id);
+
+            if (resource.IsArchived)
+            {
+                _log.Warn($"Already archived [Id={id}].");
+                return;
+            }
+
+            resource.IsArchived = true;
+            resource.MarkUpdated();
+
+            await unitOfWork.CompleteAsync();
+
             _log.Info($"Archived resource [Id={id}].");
+        }
+
+        public async Task UnarchiveAsync(Guid id)
+        {
+            var resource = await GetByIdAsync(id);
+
+            if (!resource.IsArchived)
+            {
+                _log.Warn($"Resource already unarchived [Id={id}].");
+                return;
+            }
+
+            resource.IsArchived = false;
+            resource.MarkUpdated();
+
+            await unitOfWork.CompleteAsync();
+
+            _log.Info($"Unarchived resource [Id={id}].");
         }
     }
 }

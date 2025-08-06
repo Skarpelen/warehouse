@@ -14,7 +14,7 @@ namespace Warehouse.BusinessLogic.Models
         public Guid ClientId { get; set; }
 
         [Column("date")]
-        public DateTime Date { get; set; }
+        public DateTimeOffset Date { get; set; }
 
         [Column("status")]
         public ShipmentStatus Status { get; set; }

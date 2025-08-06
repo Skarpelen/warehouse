@@ -9,7 +9,7 @@ namespace Warehouse.BusinessLogic.Models
         public string Number { get; set; }
 
         [Column("date")]
-        public DateTime Date { get; set; }
+        public DateTimeOffset Date { get; set; }
 
         public List<SupplyItem> Items { get; set; }
     }

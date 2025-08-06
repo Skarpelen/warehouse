@@ -7,5 +7,8 @@ namespace Warehouse.BusinessLogic.Models
     {
         [Column("name")]
         public string Name { get; set; }
+
+        [Column("is_archived")]
+        public bool IsArchived { get; set; }
     }
 }

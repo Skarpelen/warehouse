@@ -4,7 +4,6 @@ namespace Warehouse.BusinessLogic.Services
 {
     using Warehouse.BusinessLogic.Models;
     using Warehouse.BusinessLogic.Repository;
-    using Warehouse.Shared;
     using Warehouse.Shared.Filters;
 
     public interface IUnitOfMeasureService
@@ -14,7 +13,9 @@ namespace Warehouse.BusinessLogic.Services
         Task<IEnumerable<UnitOfMeasure>> GetAllAsync(bool includeArchived = false);
         Task<IEnumerable<UnitOfMeasure>> GetFilteredAsync(UnitFilter filter);
         Task UpdateAsync(Guid id, UnitOfMeasure newUnit);
+        Task DeleteAsync(Guid id);
         Task ArchiveAsync(Guid id);
+        Task UnarchiveAsync(Guid id);
     }
 
     public class UnitOfMeasureService(IUnitOfWork unitOfWork) : IUnitOfMeasureService
@@ -78,7 +79,6 @@ namespace Warehouse.BusinessLogic.Services
             }
 
             old.Name = newUnit.Name;
-            old.IsDeleted = newUnit.IsDeleted;
 
             await unitOfWork.UnitsOfMeasure.Update(old);
             await unitOfWork.CompleteAsync();
@@ -86,20 +86,56 @@ namespace Warehouse.BusinessLogic.Services
             _log.Info($"Updated unit [Id={id}].");
         }
 
-        public async Task ArchiveAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
             var unitOfMeasure = await GetByIdAsync(id);
 
             if (unitOfMeasure.IsDeleted)
             {
-                _log.Warn($"Already archived [Id={id}].");
+                _log.Warn($"Unit already deleted [Id={id}].");
                 return;
             }
 
             await unitOfWork.UnitsOfMeasure.SoftDelete(id);
             await unitOfWork.CompleteAsync();
 
+            _log.Info($"Deleted unit [Id={id}].");
+        }
+
+        public async Task ArchiveAsync(Guid id)
+        {
+            var unitOfMeasure = await GetByIdAsync(id);
+
+            if (unitOfMeasure.IsArchived)
+            {
+                _log.Warn($"Already archived [Id={id}].");
+                return;
+            }
+
+            unitOfMeasure.IsArchived = true;
+            unitOfMeasure.MarkUpdated();
+
+            await unitOfWork.CompleteAsync();
+
             _log.Info($"Archived unit [Id={id}].");
+        }
+
+        public async Task UnarchiveAsync(Guid id)
+        {
+            var unitOfMeasure = await GetByIdAsync(id);
+
+            if (!unitOfMeasure.IsArchived)
+            {
+                _log.Warn($"Unit already unarchived [Id={id}].");
+                return;
+            }
+
+            unitOfMeasure.IsArchived = false;
+            unitOfMeasure.MarkUpdated();
+
+            await unitOfWork.CompleteAsync();
+
+            _log.Info($"Unarchived unitOfMeasure [Id={id}].");
         }
     }
 }

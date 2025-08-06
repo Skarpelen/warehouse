@@ -18,27 +18,27 @@ namespace Warehouse.BusinessLogic.Models
         public bool IsDeleted { get; set; }
 
         [Column("deleted_at")]
-        public DateTime? DeletedAt { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
 
         [Column("created_at")]
-        public DateTime CreatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
 
         [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
 
         public void MarkCreated()
         {
-            if (CreatedAt != default(DateTime))
+            if (CreatedAt != default(DateTimeOffset))
             {
                 throw new InvalidOperationException("Entity is already marked created");
             }
 
-            CreatedAt = DateTime.UtcNow;
+            CreatedAt = DateTimeOffset.UtcNow;
         }
 
         public void MarkUpdated()
         {
-            UpdatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTimeOffset.UtcNow;
         }
 
         public void Delete()
@@ -49,7 +49,7 @@ namespace Warehouse.BusinessLogic.Models
             }
 
             IsDeleted = true;
-            DeletedAt = DateTime.UtcNow;
+            DeletedAt = DateTimeOffset.UtcNow;
         }
     }
 }

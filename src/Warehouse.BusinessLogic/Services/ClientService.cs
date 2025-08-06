@@ -4,7 +4,6 @@ namespace Warehouse.BusinessLogic.Services
 {
     using Warehouse.BusinessLogic.Models;
     using Warehouse.BusinessLogic.Repository;
-    using Warehouse.Shared;
     using Warehouse.Shared.Filters;
 
     public interface IClientService
@@ -14,7 +13,9 @@ namespace Warehouse.BusinessLogic.Services
         Task<IEnumerable<Client>> GetAllAsync(bool includeArchived = false);
         Task<IEnumerable<Client>> GetFilteredAsync(ClientFilter filter);
         Task UpdateAsync(Guid id, Client newClient);
+        Task DeleteAsync(Guid id);
         Task ArchiveAsync(Guid id);
+        Task UnarchiveAsync(Guid id);
     }
 
     public class ClientService(IUnitOfWork unitOfWork) : IClientService
@@ -82,7 +83,6 @@ namespace Warehouse.BusinessLogic.Services
 
             existing.Name = newClient.Name;
             existing.Address = newClient.Address;
-            existing.IsDeleted = newClient.IsDeleted;
 
             await unitOfWork.Clients.Update(existing);
             await unitOfWork.CompleteAsync();
@@ -90,20 +90,56 @@ namespace Warehouse.BusinessLogic.Services
             _log.Info($"Updated client [Id={id}].");
         }
 
-        public async Task ArchiveAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
             var client = await GetByIdAsync(id);
 
             if (client.IsDeleted)
             {
-                _log.Warn($"Client already archived [Id={id}].");
+                _log.Warn($"Client already deleted [Id={id}].");
                 return;
             }
 
             await unitOfWork.Clients.SoftDelete(id);
             await unitOfWork.CompleteAsync();
 
+            _log.Info($"Deleted client [Id={id}].");
+        }
+
+        public async Task ArchiveAsync(Guid id)
+        {
+            var client = await GetByIdAsync(id);
+
+            if (client.IsArchived)
+            {
+                _log.Warn($"Client already archived [Id={id}].");
+                return;
+            }
+
+            client.IsArchived = true;
+            client.MarkUpdated();
+
+            await unitOfWork.CompleteAsync();
+
             _log.Info($"Archived client [Id={id}].");
+        }
+
+        public async Task UnarchiveAsync(Guid id)
+        {
+            var client = await GetByIdAsync(id);
+
+            if (!client.IsArchived)
+            {
+                _log.Warn($"Client already unarchived [Id={id}].");
+                return;
+            }
+
+            client.IsArchived = false;
+            client.MarkUpdated();
+
+            await unitOfWork.CompleteAsync();
+
+            _log.Info($"Unarchived client [Id={id}].");
         }
     }
 }
