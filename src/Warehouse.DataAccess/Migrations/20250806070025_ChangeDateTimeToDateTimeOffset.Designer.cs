@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Warehouse.DataAccess.Models;
@@ -11,9 +12,11 @@ using Warehouse.DataAccess.Models;
 namespace Warehouse.DataAccess.Migrations
 {
     [DbContext(typeof(WarehouseContext))]
-    partial class WarehouseContextModelSnapshot : ModelSnapshot
+    [Migration("20250806070025_ChangeDateTimeToDateTimeOffset")]
+    partial class ChangeDateTimeToDateTimeOffset
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

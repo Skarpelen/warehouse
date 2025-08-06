@@ -12,11 +12,11 @@ namespace Warehouse.DataAccess.Repository
     {
         public async Task<IEnumerable<Resource>> GetAllFiltered(ResourceFilter filter)
         {
-            var query = _context.Resources.AsQueryable();
+            var query = _context.Resources.AsQueryable().Where(x => !x.IsDeleted);
 
             if (!filter.IncludeArchived)
             {
-                query = query.Where(x => !x.IsDeleted);
+                query = query.Where(x => !x.IsArchived);
             }
 
             if (filter.Ids.Any())

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Warehouse.DataAccess.Models;
@@ -11,9 +12,11 @@ using Warehouse.DataAccess.Models;
 namespace Warehouse.DataAccess.Migrations
 {
     [DbContext(typeof(WarehouseContext))]
-    partial class WarehouseContextModelSnapshot : ModelSnapshot
+    [Migration("20250806051348_AddIsArchivedField")]
+    partial class AddIsArchivedField
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,11 +32,11 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTimeOffset?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
@@ -53,7 +56,7 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("unit_id");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
@@ -78,11 +81,11 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("text")
                         .HasColumnName("address");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTimeOffset?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
@@ -99,7 +102,7 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
@@ -115,11 +118,11 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTimeOffset?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
@@ -136,7 +139,7 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
@@ -156,15 +159,15 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("client_id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTimeOffset>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date");
 
-                    b.Property<DateTimeOffset?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
@@ -181,7 +184,7 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("status");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
@@ -199,11 +202,11 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTimeOffset?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
@@ -227,7 +230,7 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("unit_id");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
@@ -249,15 +252,15 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTimeOffset>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("date");
 
-                    b.Property<DateTimeOffset?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
@@ -270,7 +273,7 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("text")
                         .HasColumnName("number");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
@@ -286,11 +289,11 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTimeOffset?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
@@ -314,7 +317,7 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("unit_id");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
@@ -336,11 +339,11 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTimeOffset?>("DeletedAt")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
@@ -357,7 +360,7 @@ namespace Warehouse.DataAccess.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 

@@ -18,5 +18,24 @@ namespace Warehouse.DataAccess.Models
         public DbSet<SupplyDocument> SupplyDocuments { get; set; } = null!;
         public DbSet<SupplyItem> SupplyItems { get; set; } = null!;
         public DbSet<UnitOfMeasure> UnitOfMeasures { get; set; } = null!;
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder
+                .Entity<SupplyDocument>()
+                .Property(e => e.Date)
+                .HasConversion(
+                    v => v.UtcDateTime,
+                    v => new DateTimeOffset(v, TimeSpan.Zero)
+                );
+
+            modelBuilder
+                .Entity<ShipmentDocument>()
+                .Property(e => e.Date)
+                .HasConversion(
+                    v => v.UtcDateTime,
+                    v => new DateTimeOffset(v, TimeSpan.Zero)
+                );
+        }
     }
 }
