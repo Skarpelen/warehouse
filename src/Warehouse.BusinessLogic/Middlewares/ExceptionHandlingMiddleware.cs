@@ -1,6 +1,7 @@
-﻿using System.Text;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using NLog;
+using System.Text;
+using System.Text.Json;
 
 namespace Warehouse.BusinessLogic.Middlewares
 {
@@ -12,108 +13,56 @@ namespace Warehouse.BusinessLogic.Middlewares
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
+            context.Request.EnableBuffering();
+
             try
             {
                 await next(context);
             }
             catch (Exception ex)
             {
-                if (ex is SecureException secureException)
-                {
-                    var queryParameters = context.Request.QueryString.HasValue ? context.Request.QueryString.Value : "N/A";
-                    var bodyParameters = await GetRequestBodyAsync(context);
-                    secureException.QueryParameters = queryParameters;
-                    secureException.BodyParameters = bodyParameters;
-                    await HandleExceptionAsync(context, secureException);
-                }
-                else
-                {
-                    await HandleExceptionAsync(context, ex);
-                }
+                await HandleExceptionAsync(context, ex);
             }
-        }
-
-        private async Task<string> GetRequestBodyAsync(HttpContext context)
-        {
-            if (context.Request.ContentLength > 0)
-            {
-                context.Request.Body.Position = 0;
-
-                using (var reader = new StreamReader(context.Request.Body, Encoding.UTF8, true, 1024, true))
-                {
-                    var body = await reader.ReadToEndAsync();
-                    context.Request.Body.Position = 0;
-                    return body;
-                }
-            }
-
-            return "N/A";
         }
 
         private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             var eventId = DateTime.UtcNow.Ticks;
-            var response = new { id = eventId.ToString() };
-            context.Response.ContentType = "application/json";
 
-            if (exception is SecureException secureException)
-            {
-                await LogExceptionToJournal(eventId, secureException, "Secure");
-
-                context.Response.StatusCode = 500;
-                var secureResponse = new
-                {
-                    type = "Secure",
-                    id = eventId,
-                    data = new { message = secureException.Message }
-                };
-
-                await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(secureResponse));
-            }
-            else
-            {
-                await LogExceptionToJournal(eventId, exception, "Exception");
-
-                context.Response.StatusCode = 500;
-                var exceptionResponse = new
-                {
-                    type = "Exception",
-                    id = eventId,
-                    data = new { message = $"Internal server error ID = {eventId}" }
-                };
-
-                await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(exceptionResponse));
-            }
-
-            await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(response));
-        }
-
-        // Тут можно сделать логику передачи лога в какой то журнал, например ES
-        private Task LogExceptionToJournal(long eventId, Exception exception, string type)
-        {
             var sb = new StringBuilder();
+            sb.AppendLine("[ErrorLog]")
+              .AppendLine($"EventId: {eventId}")
+              .AppendLine($"Timestamp: {DateTime.UtcNow:o}");
 
-            sb.AppendLine("[ErrorLog]");
-            sb.AppendLine($"EventId: {eventId}");
-            sb.AppendLine($"Timestamp: {DateTime.UtcNow:o}");
-            sb.AppendLine($"ExceptionType: {type}");
-            sb.AppendLine($"Message: {exception.Message}");
-            sb.AppendLine($"StackTrace: {exception.StackTrace ?? "N/A"}");
+            var ex = exception;
 
-            if (exception is SecureException secureEx)
+            while (ex != null)
             {
-                sb.AppendLine($"QueryParameters: {secureEx.QueryParameters}");
-                sb.AppendLine($"BodyParameters: {secureEx.BodyParameters}");
+                sb.AppendLine($"ExceptionType: {ex.GetType().FullName}");
+                sb.AppendLine($"Message: {ex.Message}");
+                sb.AppendLine($"StackTrace: {ex.StackTrace ?? "N/A"}");
+                ex = ex.InnerException;
             }
-            else
-            {
-                sb.AppendLine("QueryParameters: N/A");
-                sb.AppendLine("BodyParameters: N/A");
-            }
+
+            sb.AppendLine(context.Request.QueryString.HasValue
+                ? $"QueryString: {context.Request.QueryString}"
+                : "QueryString: N/A");
 
             _log.Error(sb.ToString());
 
-            return Task.CompletedTask;
+            var resp = new
+            {
+                type = "Exception",
+                id = eventId,
+                data = new
+                {
+                    message = $"Internal server error ID = {eventId}"
+                }
+            };
+
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            await context.Response.WriteAsync(JsonSerializer.Serialize(resp));
         }
     }
 }
