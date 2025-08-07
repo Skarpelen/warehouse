@@ -5,15 +5,16 @@
 @inject IApiAccess Api
 
 <CrudForm TDto="ClientDTO"
-                   Title="Клиент"
-                   Id="@Id"
-                   ReturnUrl="/clients"
-                   LoadFunc="async id => await Api.GetClient(id).ContinueWith(t => (t.Result.Result, t.Result.Response))"
-                   SaveFunc="async dto => (Id == Guid.Empty
-                                           ? (await Api.CreateClient(dto)).Result
-                                           : (await Api.UpdateClient(dto)).Result)"
-                   DeleteFunc="async id => (await Api.DeleteClient(id)).Result"
-                   ArchiveFunc="async id => (await Api.DeleteClient(id)).Result">
+          Title="Клиент"
+          Id="@Id"
+          ReturnUrl="/clients"
+          LoadFunc="async id => await Api.GetClient(id).ContinueWith(t => (t.Result.Result, t.Result.Response))"
+          SaveFunc="async dto => (Id == Guid.Empty
+                                                     ? (await Api.CreateClient(dto)).Result
+                                                     : (await Api.UpdateClient(dto)).Result)"
+          DeleteFunc="async id => (await Api.DeleteClient(id)).Result"
+          ArchiveFunc="async id => (await Api.ArchiveClient(id)).Result"
+          UnarchiveFunc="async id => (await Api.UnarchiveClient(id)).Result">
     <Template Context="model">
         <MudTextField Label="Наименование" @bind-Value="model.Name" />
         <MudTextField Label="Адрес" @bind-Value="model.Address" />

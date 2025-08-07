@@ -3,17 +3,62 @@
 @inject NavigationManager Nav
 @inject IToastService Toast
 
-
 <PageTitle>@Title</PageTitle>
 <h3>@Title</h3>
-<MudStack Row="true" Spacing="2" Class="mb-4">
-    <MudButton Variant="Variant.Filled" OnClick="Save" Disabled="_isBusy">Сохранить</MudButton>
-    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="Delete" Disabled="_isBusy">Удалить</MudButton>
-    <MudButton Variant="Variant.Outlined" OnClick="Archive" Disabled="_isBusy">В архив</MudButton>
-</MudStack>
-<MudPaper Class="pa-4">
-    @Template(Model)
-</MudPaper>
+
+@if (_editContext is null)
+{
+    <MudText>Загрузка...</MudText>
+}
+else
+{
+    <MudForm @ref="_form">
+        <EditForm EditContext="@_editContext"
+                  OnValidSubmit="HandleValidSubmit"
+                  OnInvalidSubmit="HandleInvalidSubmit">
+            <DataAnnotationsValidator />
+
+            <MudStack Row="true" Spacing="2" Class="mb-4">
+                <MudButton Variant="Variant.Filled"
+                           ButtonType="ButtonType.Submit"
+                           Disabled="_isBusy">
+                    Сохранить
+                </MudButton>
+
+                @if (Id != Guid.Empty)
+                {
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Error"
+                               OnClick="HandleDelete"
+                               Disabled="_isBusy">
+                        Удалить
+                    </MudButton>
+                    @if (!((dynamic)Model).IsArchived)
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   OnClick="HandleArchive"
+                                   Disabled="_isBusy">
+                            В архив
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Success"
+                                   OnClick="HandleUnarchive"
+                                   Disabled="_isBusy">
+                            В работу
+                        </MudButton>
+                    }
+                }
+            </MudStack>
+
+            <MudPaper Class="pa-4">
+                @Template(Model)
+            </MudPaper>
+        </EditForm>
+    </MudForm>
+}
 
 @code {
     [Parameter] public string Title { get; set; } = string.Empty;
@@ -22,10 +67,13 @@
     [Parameter] public Func<TDto, Task<ResultCode>> SaveFunc { get; set; } = _ => throw new InvalidOperationException();
     [Parameter] public Func<Guid, Task<ResultCode>> DeleteFunc { get; set; } = _ => throw new InvalidOperationException();
     [Parameter] public Func<Guid, Task<ResultCode>> ArchiveFunc { get; set; } = _ => throw new InvalidOperationException();
+    [Parameter] public Func<Guid, Task<ResultCode>> UnarchiveFunc { get; set; } = _ => throw new InvalidOperationException();
     [Parameter] public string ReturnUrl { get; set; } = string.Empty;
     [Parameter] public RenderFragment<TDto> Template { get; set; } = _ => null!;
 
     private TDto Model = default!;
+    private EditContext _editContext = default!;
+    private MudForm _form = default!;
     private bool _isBusy;
 
     protected override async Task OnInitializedAsync()
@@ -47,9 +95,11 @@
         {
             Model = Activator.CreateInstance<TDto>()!;
         }
+
+        _editContext = new EditContext(Model);
     }
 
-    private async Task Save()
+    private async Task HandleValidSubmit()
     {
         _isBusy = true;
         var code = await SaveFunc(Model);
@@ -66,7 +116,15 @@
         _isBusy = false;
     }
 
-    private async Task Delete()
+    private void HandleInvalidSubmit(EditContext ctx)
+    {
+        var messages = ctx.GetValidationMessages()
+                          .Distinct()
+                          .ToList();
+        Toast.ShowError(string.Join("\n", messages));
+    }
+
+    private async Task HandleDelete()
     {
         if (Id == Guid.Empty)
         {
@@ -84,10 +142,11 @@
         {
             Toast.ShowError("Ошибка при удалении");
         }
+
         _isBusy = false;
     }
 
-    private async Task Archive()
+    private async Task HandleArchive()
     {
         if (Id == Guid.Empty)
         {
@@ -99,11 +158,33 @@
 
         if (code == ResultCode.Ok)
         {
-            Nav.NavigateTo($"{ReturnUrl}/archive");
+            Nav.NavigateTo($"{ReturnUrl}/2");
         }
         else
         {
-            Toast.ShowError("Ошибка при архивацией");
+            Toast.ShowError("Ошибка при архивации");
+        }
+
+        _isBusy = false;
+    }
+
+    private async Task HandleUnarchive()
+    {
+        if (Id == Guid.Empty)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        var code = await UnarchiveFunc(Id);
+
+        if (code == ResultCode.Ok)
+        {
+            Nav.NavigateTo($"{ReturnUrl}/1");
+        }
+        else
+        {
+            Toast.ShowError("Ошибка при разархивации");
         }
 
         _isBusy = false;

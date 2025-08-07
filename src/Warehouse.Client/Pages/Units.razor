@@ -1,4 +1,5 @@
 ﻿@page "/units"
+@page "/units/{view:int}"
 @using Warehouse.Client.Components
 @using Warehouse.Client.Services
 @using Warehouse.Shared.DTO
@@ -11,14 +12,25 @@
 <h3>Единицы измерения</h3>
 
 <MudStack Row="true" Spacing="2" Class="mb-4">
-    <MudButton Variant="Variant.Filled"
-               OnClick='() => Nav.NavigateTo("/units/form/00000000-0000-0000-0000-000000000000")'>
-        Добавить
-    </MudButton>
-    <MudButton Variant="Variant.Outlined"
-               OnClick='() => Nav.NavigateTo("/units/archive")'>
-        К архиву
-    </MudButton>
+    @if (View == 2)
+    {
+        <MudButton Variant="Variant.Outlined"
+                   OnClick='() => Nav.NavigateTo("/units/1")'>
+            К рабочим
+        </MudButton>
+    }
+    else
+    {
+        <MudButton Variant="Variant.Filled"
+                   OnClick='() => Nav.NavigateTo("/units/form/00000000-0000-0000-0000-000000000000")'>
+            Добавить
+        </MudButton>
+        <MudButton Variant="Variant.Outlined"
+                   OnClick='() => Nav.NavigateTo("/units/2")'>
+            К архиву
+        </MudButton>
+    }
+    
 </MudStack>
 
 @if (_isLoading)
@@ -42,16 +54,20 @@ else
 }
 
 @code {
+    [Parameter] public int View { get; set; } = 1;
+
     private IEnumerable<UnitDTO> _units = Array.Empty<UnitDTO>();
     private bool _isLoading = true;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        var res = await Api.GetAllUnits(false);
+        _isLoading = true;
+
+        var res = await Api.GetAllUnits(View == 2);
 
         if (res.Result == ResultCode.Ok && res.Response is not null)
         {
-            _units = res.Response;
+            _units = View == 2 ? res.Response.Where(dto => dto.IsArchived) : res.Response;
         }
         else
         {

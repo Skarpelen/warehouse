@@ -5,15 +5,16 @@
 @inject IApiAccess Api
 
 <CrudForm TDto="ResourceDTO"
-                   Title="Ресурс"
-                   Id="@Id"
-                   ReturnUrl="/resources"
-                   LoadFunc="async id => await Api.GetResource(id).ContinueWith(t => (t.Result.Result, t.Result.Response))"
-                   SaveFunc="async dto => (Id == Guid.Empty
-                                           ? (await Api.CreateResource(dto)).Result
-                                           : (await Api.UpdateResource(dto)).Result)"
-                   DeleteFunc="async id => (await Api.ArchiveResource(id)).Result"
-                   ArchiveFunc="async id => (await Api.ArchiveResource(id)).Result">
+          Title="Ресурс"
+          Id="@Id"
+          ReturnUrl="/resources"
+          LoadFunc="async id => await Api.GetResource(id).ContinueWith(t => (t.Result.Result, t.Result.Response))"
+          SaveFunc="async dto => (Id == Guid.Empty
+                                                     ? (await Api.CreateResource(dto)).Result
+                                                     : (await Api.UpdateResource(dto)).Result)"
+          DeleteFunc="async id => (await Api.DeleteResource(id)).Result"
+          ArchiveFunc="async id => (await Api.ArchiveResource(id)).Result"
+          UnarchiveFunc="async id => (await Api.UnarchiveResource(id)).Result">
     <Template Context="model">
         <MudTextField Label="Наименование" @bind-Value="model.Name" />
     </Template>
