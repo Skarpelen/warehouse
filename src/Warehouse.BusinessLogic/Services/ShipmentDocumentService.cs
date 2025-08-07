@@ -10,14 +10,14 @@ namespace Warehouse.BusinessLogic.Services
     public interface IShipmentDocumentService
     {
         Task<ShipmentDocument> CreateAsync(ShipmentDocument document);
-        Task<ShipmentDocument> GetByIdAsync(Guid id);
+        Task<ShipmentDocument> GetByIdAsync(Guid id, bool shouldTrack = true);
         Task<IEnumerable<ShipmentDocument>> GetAllAsync();
         Task<IEnumerable<ShipmentDocument>> GetFilteredAsync(DocumentFilter filter);
         Task UpdateAsync(Guid id, ShipmentDocument document);
         Task ChangeStatusAsync(Guid id, ShipmentStatus newStatus);
     }
 
-    public class ShipmentDocumentService(IUnitOfWork unitOfWork) : IShipmentDocumentService
+    public class ShipmentDocumentService(IUnitOfWork unitOfWork, IBalanceService balanceService) : IShipmentDocumentService
     {
         private readonly Logger _log = LogManager.GetCurrentClassLogger();
 
@@ -43,9 +43,18 @@ namespace Warehouse.BusinessLogic.Services
             return document;
         }
 
-        public async Task<ShipmentDocument> GetByIdAsync(Guid id)
+        public async Task<ShipmentDocument> GetByIdAsync(Guid id, bool shouldTrack = true)
         {
-            var document = await unitOfWork.ShipmentDocuments.GetWithItemsAsync(id);
+            ShipmentDocument? document;
+
+            if (shouldTrack)
+            {
+                document = await unitOfWork.ShipmentDocuments.GetWithItemsAsync(id);
+            }
+            else
+            {
+                document = await unitOfWork.ShipmentDocuments.GetWithItemsNoTrackingAsync(id);
+            }
 
             if (document == null)
             {
@@ -66,30 +75,81 @@ namespace Warehouse.BusinessLogic.Services
             return await unitOfWork.ShipmentDocuments.GetAllFiltered(filter);
         }
 
-        public async Task UpdateAsync(Guid id, ShipmentDocument document)
+        public async Task UpdateAsync(Guid id, ShipmentDocument updated)
         {
-            var old = await GetByIdAsync(id);
+            await unitOfWork.BeginTransactionAsync();
 
-            if (!old.Number.Equals(document.Number, StringComparison.OrdinalIgnoreCase))
+            try
             {
-                var all = await unitOfWork.ShipmentDocuments.GetAll();
+                var doc = await unitOfWork.ShipmentDocuments.GetWithItemsAsync(id)
+                          ?? throw new KeyNotFoundException($"Shipment '{id}' not found.");
 
-                if (all.Any(x => x.Number == document.Number && x.Id != id))
+                if (!doc.Number.Equals(updated.Number, StringComparison.OrdinalIgnoreCase))
                 {
-                    _log.Warn($"Duplicate number '{document.Number}'.");
-                    throw new InvalidOperationException($"Number '{document.Number}' already exists.");
+                    var all = await unitOfWork.ShipmentDocuments.GetAll();
+
+                    if (all.Any(x => x.Number == updated.Number && x.Id != id))
+                    {
+                        _log.Warn($"Duplicate number '{updated.Number}'.");
+                        throw new InvalidOperationException($"Number '{updated.Number}' already exists.");
+                    }
                 }
+
+                doc.Number = updated.Number;
+                doc.Date = updated.Date;
+                doc.ClientId = updated.ClientId;
+                await unitOfWork.CompleteAsync();
+
+                var toRemove = doc.Items
+                    .Where(oldItem => !updated.Items.Any(newItem => newItem.Id == oldItem.Id))
+                    .ToList();
+
+                foreach (var oldItem in toRemove)
+                {
+                    await unitOfWork.ShipmentItems.HardDelete(oldItem.Id);
+                }
+
+                var toAdd = updated.Items
+                    .Where(newItem => newItem.Id == Guid.Empty)
+                    .ToList();
+
+                foreach (var newItem in toAdd)
+                {
+                    var ni = new ShipmentItem
+                    {
+                        Id = Guid.NewGuid(),
+                        ShipmentDocumentId = id,
+                        ResourceId = newItem.ResourceId,
+                        UnitOfMeasureId = newItem.UnitOfMeasureId,
+                        Quantity = newItem.Quantity
+                    };
+                    await unitOfWork.ShipmentItems.Add(ni);
+                }
+
+                foreach (var newItem in updated.Items.Where(i => i.Id != Guid.Empty))
+                {
+                    var existingItem = doc.Items.FirstOrDefault(i => i.Id == newItem.Id);
+
+                    if (existingItem != null)
+                    {
+                        existingItem.ResourceId = newItem.ResourceId;
+                        existingItem.UnitOfMeasureId = newItem.UnitOfMeasureId;
+                        existingItem.Quantity = newItem.Quantity;
+                    }
+                }
+
+                await unitOfWork.CompleteAsync();
+
+                await unitOfWork.CommitTransactionAsync();
+
+                _log.Info($"Updated shipment [Id={id}] with item changes.");
             }
-
-            old.Number = document.Number;
-            old.Date = document.Date;
-            old.ClientId = document.ClientId;
-            old.Items = document.Items;
-
-            await unitOfWork.ShipmentDocuments.Update(old);
-            await unitOfWork.CompleteAsync();
-
-            _log.Info($"Updated shipment [Id={id}].");
+            catch (Exception ex)
+            {
+                _log.Error(ex);
+                await unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
 
         public async Task ChangeStatusAsync(Guid id, ShipmentStatus newStatus)
@@ -103,41 +163,40 @@ namespace Warehouse.BusinessLogic.Services
 
             if (newStatus == ShipmentStatus.Signed)
             {
-                await AdjustBalancesAsync(document.Items, decrease: true);
+                var adjusts = document.Items
+                    .Select(i => new BalanceAdjustment(
+                        i.ResourceId,
+                        i.UnitOfMeasureId,
+                        -i.Quantity));
+                await balanceService.AdjustBatchAsync(adjusts);
             }
             else if (newStatus == ShipmentStatus.Revoked)
             {
                 if (document.Status != ShipmentStatus.Signed)
                 {
-                    throw new InvalidOperationException("Can revoke only signed.");
+                    throw new InvalidOperationException(
+                        "Can revoke only signed.");
                 }
-                await AdjustBalancesAsync(document.Items, decrease: false);
+
+                var adjusts = document.Items
+                    .Select(i => new BalanceAdjustment(
+                        i.ResourceId,
+                        i.UnitOfMeasureId,
+                        i.Quantity));
+                await balanceService.AdjustBatchAsync(adjusts);
             }
             else
             {
-                throw new InvalidOperationException("Invalid status transition.");
+                throw new InvalidOperationException(
+                    "Invalid status transition.");
             }
 
             document.Status = newStatus;
 
-            await unitOfWork.ShipmentDocuments.Update(document);
+            //await unitOfWork.ShipmentDocuments.Update(document);
             await unitOfWork.CompleteAsync();
-        }
 
-        private async Task AdjustBalancesAsync(IEnumerable<ShipmentItem> items, bool decrease)
-        {
-            foreach (var item in items)
-            {
-                var balance = await unitOfWork.Balances.GetByResourceAndUnitAsync(item.ResourceId, item.UnitOfMeasureId);
-
-                if (balance == null || balance.Quantity < item.Quantity)
-                {
-                    throw new InvalidOperationException("Insufficient stock.");
-                }
-
-                balance.Quantity += decrease ? -item.Quantity : item.Quantity;
-                await unitOfWork.Balances.Update(balance);
-            }
+            _log.Info($"Shipment status changed [Id={id}].");
         }
     }
 }
