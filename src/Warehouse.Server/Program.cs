@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using NLog;
 
 namespace Warehouse.Server
@@ -10,6 +11,7 @@ namespace Warehouse.Server
     using Warehouse.BusinessLogic.Repository;
     using Warehouse.BusinessLogic.Services;
     using Warehouse.DataAccess.Repository;
+    using Warehouse.Shared.DTO;
     using Warehouse.WebApi.V1;
 
     public class Program
@@ -46,7 +48,15 @@ namespace Warehouse.Server
 
             builder.Logging.ClearProviders();
 
-            var controllersBuilder = builder.Services.AddControllers();
+            var controllersBuilder = builder.Services.AddControllers(options =>
+            {
+                options.ModelMetadataDetailsProviders.Add(
+                    new SuppressChildValidationMetadataProvider(typeof(ResourceDTO))
+                );
+                options.ModelMetadataDetailsProviders.Add(
+                    new SuppressChildValidationMetadataProvider(typeof(UnitDTO))
+                );
+            });
             controllersBuilder.PartManager.ApplicationParts.Add(new AssemblyPart(typeof(ClientController).Assembly));
             controllersBuilder
                 .AddJsonOptions(options =>
@@ -99,6 +109,8 @@ namespace Warehouse.Server
 
             var app = builder.Build();
 
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
+
             app.UseBlazorFrameworkFiles();
             app.UseStaticFiles();
 
@@ -107,7 +119,6 @@ namespace Warehouse.Server
 
             await DataAccessConfiguration.EnsureSeedData(app);
 
-            app.UseDeveloperExceptionPage();
             app.UseSwagger(c =>
             {
                 c.RouteTemplate = "api/{documentName}/swagger.json";

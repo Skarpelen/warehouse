@@ -59,7 +59,7 @@ namespace Warehouse.Server
 
                 CreateMap<ShipmentDocumentDTO, ShipmentDocument>()
                     .ForMember(dest => dest.Client, o => o.Ignore())
-                    .ForMember(dest => dest.Items, o => o.Ignore());
+                    .ForMember(dest => dest.Items, o => o.MapFrom(src => src.Items));
 
                 CreateMap<SupplyItemDTO, SupplyItem>()
                     .ForMember(dest => dest.Resource, o => o.Ignore())
@@ -67,7 +67,7 @@ namespace Warehouse.Server
                     .ForMember(dest => dest.Document, o => o.Ignore());
 
                 CreateMap<SupplyDocumentDTO, SupplyDocument>()
-                    .ForMember(dest => dest.Items, o => o.Ignore());
+                    .ForMember(dest => dest.Items, o => o.MapFrom(src => src.Items));
             }
         }
     }
