@@ -5,8 +5,6 @@ using System.Text.Json;
 
 namespace Warehouse.BusinessLogic.Middlewares
 {
-    using Warehouse.BusinessLogic.Models;
-
     public class ExceptionHandlingMiddleware : IMiddleware
     {
         private readonly Logger _log = LogManager.GetCurrentClassLogger();

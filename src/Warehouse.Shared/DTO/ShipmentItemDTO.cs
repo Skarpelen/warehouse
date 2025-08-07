@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Warehouse.Shared.DTO
 {
@@ -16,6 +17,9 @@ namespace Warehouse.Shared.DTO
 
         [Range(1, double.MaxValue, ErrorMessage = "Количество должно быть больше 0")]
         public decimal Quantity { get; set; }
+
+        [JsonIgnore]
+        public decimal Available { get; set; }
 
         public ResourceDTO Resource { get; set; } = new ResourceDTO();
         public UnitDTO Unit { get; set; } = new UnitDTO();

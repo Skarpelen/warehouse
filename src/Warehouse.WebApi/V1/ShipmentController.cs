@@ -89,7 +89,7 @@ namespace Warehouse.WebApi.V1
 
             try
             {
-                _ = await service.GetByIdAsync(id);
+                _ = await service.GetByIdAsync(id, false);
                 var model = mapper.Map<ShipmentDocument>(dto);
                 await service.UpdateAsync(id, model);
                 var updated = await service.GetByIdAsync(id);
