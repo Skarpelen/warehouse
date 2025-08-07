@@ -2,6 +2,7 @@
 @using Warehouse.Client.Services
 @using Warehouse.Shared.DTO
 @using Warehouse.Shared.Filters
+@using Warehouse.Shared
 @inject IApiAccess Api
 @inject NavigationManager Nav
 @inject IToastService Toast
@@ -10,87 +11,202 @@
 
 <h3>Отгрузка</h3>
 
-@if (Id == Guid.Empty && _isLoading)
+@if (_isLoading)
 {
     <MudText>Загрузка...</MudText>
 }
 else
 {
-    <MudStack Row="true" Spacing="2" Class="mb-4">
-        <MudButton Variant="Variant.Filled" OnClick="Save" Disabled="_isSaving">Сохранить</MudButton>
-        <MudButton Variant="Variant.Outlined" OnClick="SaveAndSign" Disabled="_isSaving">Сохранить и подписать</MudButton>
-        <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="Delete" Disabled="_isSaving">Удалить</MudButton>
-    </MudStack>
-
-    <MudPaper Class="pa-4 mb-4">
-        <MudTextField T="string" Label="Номер" @bind-Value="_number" />
-        <MudSelect T="Guid" Label="Клиент" @bind-Value="_clientId" Dense="true">
-            <MudSelectItem T="Guid" Value="Guid.Empty">Выбрать</MudSelectItem>
-            @foreach (var c in _clients)
+    <MudForm @ref="_form">
+        <MudStack Row="true" Spacing="2" Class="mb-4">
+            @if (IsEditMode)
             {
-                <MudSelectItem T="Guid" Value="@c.Id">@c.Name</MudSelectItem>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Success"
+                           OnClick="Save"
+                           Disabled="_isSaving">
+                    Сохранить
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Success"
+                           OnClick="SaveAndSign"
+                           Disabled="_isSaving">
+                    Сохранить и подписать
+                </MudButton>
             }
-        </MudSelect>
-        <MudDatePicker Label="Дата" @bind-Date="_date" />
-    </MudPaper>
+            else
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Error"
+                           OnClick="Revoke"
+                           Disabled="_isSaving">
+                    Отозвать
+                </MudButton>
+            }
+        </MudStack>
 
-    <MudPaper Class="pa-4">
-        <MudTable Items="_items" Dense="true">
-            <HeaderContent>
-                <MudTh>Ресурс</MudTh>
-                <MudTh>Ед. изм.</MudTh>
-                <MudTh>Количество</MudTh>
-                <MudTh>Доступно</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.Resource.Name</MudTd>
-                <MudTd>@context.Unit.Name</MudTd>
-                <MudTd>
-                    <MudNumericField T="decimal" @bind-Value="context.Quantity" />
-                </MudTd>
-                <MudTd>@GetAvailable(context)</MudTd>
-            </RowTemplate>
-            <NoRecordsContent>Нет позиций</NoRecordsContent>
-        </MudTable>
-    </MudPaper>
+        <MudPaper Class="pa-4 mb-4">
+            <MudTextField T="string"
+                          For="@(() => _number)"
+                          Label="Номер"
+                          @bind-Value="_number"
+                          Disabled="!IsEditMode"
+                          Required="true"
+                          Immediate="true" />
+
+            <MudSelect T="Guid"
+                       For="@(() => _clientId)"
+                       Label="Клиент"
+                       @bind-Value="_clientId"
+                       Disabled="!IsEditMode"
+                       Dense="true"
+                       Required="true">
+                <MudSelectItem T="Guid" Value="Guid.Empty">Выбрать</MudSelectItem>
+                @foreach (var client in _clients)
+                {
+                    <MudSelectItem T="Guid" Value="@client.Id">@client.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudDatePicker For="@(() => _date)"
+                           Label="Дата"
+                           @bind-Date="_date"
+                           Disabled="!IsEditMode"
+                           Required="true"
+                           Immediate="true" />
+        </MudPaper>
+
+        <MudPaper Class="pa-4">
+            @if (IsEditMode)
+            {
+                <MudTable Items="_items" Dense="true">
+                    <HeaderContent>
+                        <MudTh>Ресурс</MudTh>
+                        <MudTh>Ед. изм.</MudTh>
+                        <MudTh>Количество</MudTh>
+                        <MudTh>Доступно</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Resource.Name</MudTd>
+                        <MudTd>@context.Unit.Name</MudTd>
+                        <MudTd>
+                            <MudNumericField T="decimal"
+                                             For="@(() => context.Quantity)"
+                                             @bind-Value="context.Quantity"
+                                             Required="true"
+                                             Min="1"
+                                             Immediate="true" />
+                        </MudTd>
+                        <MudTd>@context.Available</MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>Нет позиций</NoRecordsContent>
+                </MudTable>
+            }
+            else
+            {
+                <MudTable Items="_items" Dense="true">
+                    <HeaderContent>
+                        <MudTh>Ресурс</MudTh>
+                        <MudTh>Ед. изм.</MudTh>
+                        <MudTh>Количество</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Resource.Name</MudTd>
+                        <MudTd>@context.Unit.Name</MudTd>
+                        <MudTd>@context.Quantity</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudForm>
 }
 
 @code {
-    [Parameter] public Guid Id { get; set; }
+    [Parameter]
+    public Guid Id { get; set; }
 
     private string _number = string.Empty;
     private DateTime? _date = DateTime.Today;
     private Guid _clientId;
     private List<ShipmentItemDTO> _items = new();
     private IEnumerable<ClientDTO> _clients = Array.Empty<ClientDTO>();
+    private ShipmentStatus _status = ShipmentStatus.Draft;
     private bool _isLoading = true;
     private bool _isSaving;
+    private MudForm _form = default!;
+
+    private bool IsEditMode => Id == Guid.Empty || _status == ShipmentStatus.Draft;
 
     protected override async Task OnInitializedAsync()
     {
-        var clientRes = await Api.GetClients(false);
+        var clientsRes = await Api.GetClients(false);
 
-        if (clientRes.Result == ResultCode.Ok && clientRes.Response is not null)
+        if (clientsRes.Result == ResultCode.Ok && clientsRes.Response is not null)
         {
-            _clients = clientRes.Response;
+            _clients = clientsRes.Response;
         }
+
+        ShipmentDocumentDTO? dto = null;
 
         if (Id != Guid.Empty)
         {
-            var resp = await Api.GetShipment(Id);
+            var shipRes = await Api.GetShipment(Id);
 
-            if (resp.Result == ResultCode.Ok && resp.Response is not null)
+            if (shipRes.Result == ResultCode.Ok && shipRes.Response is not null)
             {
-                var dto = resp.Response;
+                dto = shipRes.Response;
                 _number = dto.Number;
                 _clientId = dto.ClientId;
-                _date = dto.Date;
-                _items = dto.Items;
+                _date = dto.Date.DateTime;
+                _status = dto.Status;
+
+                if (_status != ShipmentStatus.Draft)
+                {
+                    _items = dto.Items.ToList();
+                    _isLoading = false;
+                    return;
+                }
             }
-            else
-            {
-                Toast.ShowError("Не удалось загрузить отгрузку");
-            }
+        }
+
+        var balRes = await Api.GetAllBalances(new BalanceFilter());
+
+        var balances = balRes.Result == ResultCode.Ok && balRes.Response is not null
+            ? balRes.Response
+            : Array.Empty<BalanceDTO>();
+
+        if (Id == Guid.Empty)
+        {
+            _items = balances
+                .Select(b => new ShipmentItemDTO
+                {
+                    ResourceId = b.ResourceId,
+                    UnitOfMeasureId = b.UnitOfMeasureId,
+                    Quantity = 0m,
+                    Resource = b.Resource,
+                    Unit = b.Unit,
+                    Available = b.Quantity
+                })
+                .ToList();
+        }
+        else
+        {
+            var saved = dto!.Items
+                .ToDictionary(
+                    i => (i.ResourceId, i.UnitOfMeasureId),
+                    i => i.Quantity);
+
+            _items = balances
+                .Select(b => new ShipmentItemDTO
+                {
+                    ResourceId = b.ResourceId,
+                    UnitOfMeasureId = b.UnitOfMeasureId,
+                    Quantity = saved.TryGetValue((b.ResourceId, b.UnitOfMeasureId), out var q) ? q : 0m,
+                    Resource = b.Resource,
+                    Unit = b.Unit,
+                    Available = b.Quantity
+                })
+                .ToList();
         }
 
         _isLoading = false;
@@ -98,13 +214,22 @@ else
 
     private async Task Save()
     {
+        await _form.Validate();
+
+        if (!_form.IsValid)
+        {
+            Toast.ShowError("Пожалуйста, исправьте ошибки в форме");
+            return;
+        }
+
         _isSaving = true;
+
         var dto = new ShipmentDocumentDTO
         {
             Id = Id,
             Number = _number,
             ClientId = _clientId,
-            Date = _date.Value,
+            Date = _date!.Value,
             Items = _items
         };
 
@@ -148,18 +273,12 @@ else
         }
     }
 
-    private async Task Delete()
+    private async Task Revoke()
     {
         if (Id != Guid.Empty)
         {
-            await Api.DeleteShipment(Id);
+            await Api.RevokeShipment(Id);
             Nav.NavigateTo("/shipments");
         }
-    }
-
-    private decimal GetAvailable(ShipmentItemDTO item)
-    {
-        var balResult = Api.GetAllBalances(new BalanceFilter { ResourceIds = new[] { item.ResourceId }, UnitIds = new[] { item.UnitOfMeasureId } }).Result;
-        return balResult.Response?.FirstOrDefault()?.Quantity ?? 0;
     }
 }

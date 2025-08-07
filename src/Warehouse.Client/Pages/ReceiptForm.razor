@@ -9,80 +9,91 @@
 
 <h3>Поступление</h3>
 
-<MudButton Variant="Variant.Filled"
-           OnClick="Save"
-           Disabled="_isSaving">
-    Сохранить
-</MudButton>
+<MudForm @ref="_form">
+    <MudStack Row="true" Spacing="2" Class="mb-4">
+        <MudButton Variant="Variant.Filled"
+                   OnClick="Save"
+                   Disabled="_isSaving">
+            Сохранить
+        </MudButton>
+    </MudStack>
 
-<MudPaper Class="pa-4 mt-4">
-    <MudTextField T="string"
-                  Label="Номер"
-                  @bind-Value="_number" />
-    <MudDatePicker Label="Дата"
-                   @bind-Date="_date" />
-</MudPaper>
+    <MudPaper Class="pa-4 mt-4">
+        <MudTextField T="string"
+                      For="@(() => _number)"
+                      Label="Номер"
+                      @bind-Value="_number"
+                      Required="true"
+                      Immediate="true" />
+        <MudDatePicker For="@(() => _date)"
+                       Label="Дата"
+                       @bind-Date="_date"
+                       Required="true"
+                       Immediate="true" />
+    </MudPaper>
 
-<MudPaper Class="pa-4 mt-4">
-    <MudTable Items="_items"
-              Dense="true">
-        <HeaderContent>
-            <MudTh>
-                <MudButton Variant="Variant.Text"
-                           OnClick="AddRow"
-                           IconClass="@Icons.Material.Filled.Add" />
-            </MudTh>
-            <MudTh>Ресурс</MudTh>
-            <MudTh>Единица измерения</MudTh>
-            <MudTh>Количество</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd>
-                <MudButton Variant="Variant.Text"
-                           Color="Color.Error"
-                           OnClick="@(() => RemoveRow(context))"
-                           IconClass="@Icons.Material.Filled.Close" />
-            </MudTd>
-            <MudTd>
-                <MudSelect T="Guid"
-                           @bind-Value="context.ResourceId"
-                           Dense="true">
-                    <MudSelectItem T="Guid" Value="Guid.Empty">
-                        Выбрать
-                    </MudSelectItem>
-                    @foreach (var r in _resources)
-                    {
-                        <MudSelectItem T="Guid" Value="@r.Id">
-                            @r.Name
-                        </MudSelectItem>
-                    }
-                </MudSelect>
-            </MudTd>
-            <MudTd>
-                <MudSelect T="Guid"
-                           @bind-Value="context.Unit.Id"
-                           Dense="true">
-                    <MudSelectItem T="Guid" Value="Guid.Empty">
-                        Выбрать
-                    </MudSelectItem>
-                    @foreach (var u in _units)
-                    {
-                        <MudSelectItem T="Guid" Value="@u.Id">
-                            @u.Name
-                        </MudSelectItem>
-                    }
-                </MudSelect>
-            </MudTd>
-            <MudTd>
-                <MudNumericField T="decimal"
-                                 @bind-Value="context.Quantity" />
-            </MudTd>
-        </RowTemplate>
-        <NoRecordsContent>
-            Нет позиций
-        </NoRecordsContent>
-    </MudTable>
-</MudPaper>
+    <MudPaper Class="pa-4 mt-4">
+        <MudTable T="SupplyItemDTO"
+                  Items="@_items"
+                  Dense="true">
+            <HeaderContent>
+                <MudTh>
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Success"
+                               OnClick="AddRow"
+                               StartIcon="@Icons.Material.Filled.Add" />
+                </MudTh>
+                <MudTh>Ресурс</MudTh>
+                <MudTh>Единица измерения</MudTh>
+                <MudTh>Количество</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Error"
+                               OnClick="@(() => RemoveRow(context))"
+                               StartIcon="@Icons.Material.Filled.Close" />
+                </MudTd>
+                <MudTd>
+                    <MudSelect T="Guid"
+                               For="@(() => context.ResourceId)"
+                               @bind-Value="context.ResourceId"
+                               Dense="true"
+                               Required="true">
+                        <MudSelectItem T="Guid" Value="Guid.Empty">Выбрать</MudSelectItem>
+                        @foreach (var r in _resources)
+                        {
+                            <MudSelectItem T="Guid" Value="@r.Id">@r.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudTd>
+                <MudTd>
+                    <MudSelect T="Guid"
+                               For="@(() => context.UnitOfMeasureId)"
+                               @bind-Value="context.UnitOfMeasureId"
+                               Dense="true"
+                               Required="true">
+                        <MudSelectItem T="Guid" Value="Guid.Empty">Выбрать</MudSelectItem>
+                        @foreach (var u in _units)
+                        {
+                            <MudSelectItem T="Guid" Value="@u.Id">@u.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudTd>
+                <MudTd>
+                    <MudNumericField T="decimal"
+                                     For="@(() => context.Quantity)"
+                                     Label="Количество"
+                                     @bind-Value="context.Quantity"
+                                     Required="true"
+                                     Min="1"
+                                     Immediate="true" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>Нет позиций</NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+</MudForm>
 
 @code {
     [Parameter] public Guid Id { get; set; }
@@ -93,6 +104,7 @@
     private IEnumerable<ResourceDTO> _resources = new List<ResourceDTO>();
     private IEnumerable<UnitDTO> _units = new List<UnitDTO>();
     private bool _isSaving;
+    private MudForm _form = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -118,14 +130,16 @@
             {
                 var dto = supRes.Response;
                 _number = dto.Number;
-                _date = dto.Date;
+                _date = dto.Date.DateTime;
                 _items = dto.Items
                              .Select(i => new SupplyItemDTO
-                                 {
-                                     ResourceId = i.ResourceId,
-                                     Unit = i.Unit,
-                                     Quantity = i.Quantity
-                                 })
+                             {
+                                 ResourceId = i.ResourceId,
+                                 Resource = i.Resource,
+                                 UnitOfMeasureId = i.UnitOfMeasureId,
+                                 Unit = i.Unit,
+                                 Quantity = i.Quantity
+                             })
                              .ToList();
             }
             else
@@ -138,11 +152,11 @@
     private void AddRow()
     {
         _items.Add(new SupplyItemDTO
-            {
-                ResourceId = Guid.Empty,
-                Unit = new UnitDTO(),
-                Quantity = 0
-            });
+        {
+            ResourceId = Guid.Empty,
+            UnitOfMeasureId = Guid.Empty,
+            Quantity = 0
+        });
     }
 
     private void RemoveRow(SupplyItemDTO item)
@@ -152,15 +166,23 @@
 
     private async Task Save()
     {
+        await _form.Validate();
+
+        if (!_form.IsValid)
+        {
+            Toast.ShowError("Пожалуйста, исправьте ошибки в форме");
+            return;
+        }
+
         _isSaving = true;
 
         var dto = new SupplyDocumentDTO
-            {
-                Id = Id,
-                Number = _number,
-                Date = _date!.Value,
-                Items = _items
-            };
+        {
+            Id = Id,
+            Number = _number,
+            Date = _date!.Value,
+            Items = _items
+        };
 
         var result = Id == Guid.Empty
             ? (await Api.CreateSupply(dto)).Result
