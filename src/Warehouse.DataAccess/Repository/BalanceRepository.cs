@@ -14,19 +14,20 @@ namespace Warehouse.DataAccess.Repository
         {
             var query = _context.Balances.AsQueryable();
 
-            if (filter.ResourceIds.Any())
+            query = query.Where(b => !b.IsDeleted);
+
+            if (filter.ResourceIds?.Any() == true)
             {
-                query = query.Where(b => filter.ResourceIds.Contains(b.Resource.Id));
+                query = query.Where(b => filter.ResourceIds.Contains(b.ResourceId));
             }
 
-            query = query.Where(x => !x.IsDeleted);
-
-            if (filter.UnitIds.Any())
+            if (filter.UnitIds?.Any() == true)
             {
-                query = query.Where(b => filter.UnitIds.Contains(b.Unit.Id));
+                query = query.Where(b => filter.UnitIds.Contains(b.UnitOfMeasureId));
             }
 
-            return await query.Include(b => b.Resource)
+            return await query
+                .Include(b => b.Resource)
                 .Include(b => b.Unit)
                 .ToListAsync();
         }

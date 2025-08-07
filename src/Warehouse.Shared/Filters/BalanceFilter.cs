@@ -2,7 +2,7 @@
 {
     public class BalanceFilter
     {
-        public IEnumerable<Guid> ResourceIds { get; set; } = Enumerable.Empty<Guid>();
-        public IEnumerable<Guid> UnitIds { get; set; } = Enumerable.Empty<Guid>();
+        public List<Guid> ResourceIds { get; set; } = new();
+        public List<Guid> UnitIds { get; set; } = new();
     }
 }
