@@ -52,5 +52,14 @@ namespace Warehouse.DataAccess.Repository
                 .Include(d => d.Items).ThenInclude(i => i.Unit)
                 .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
         }
+
+        public async Task<ShipmentDocument?> GetWithItemsNoTrackingAsync(Guid id)
+        {
+            return await _context.ShipmentDocuments
+                .Include(d => d.Items).ThenInclude(i => i.Resource)
+                .Include(d => d.Items).ThenInclude(i => i.Unit)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
+        }
     }
 }
