@@ -4,5 +4,6 @@
 
     public interface ISupplyItemRepository : IGenericRepository<SupplyItem>
     {
+        Task AddRangeAsync(IEnumerable<SupplyItem> items);
     }
 }

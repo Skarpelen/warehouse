@@ -7,5 +7,6 @@
     {
         Task<IEnumerable<SupplyDocument>> GetAllFiltered(DocumentFilter filter);
         Task<SupplyDocument?> GetWithItemsAsync(Guid id);
+        Task<SupplyDocument?> GetWithItemsNoTrackingAsync(Guid id);
     }
 }

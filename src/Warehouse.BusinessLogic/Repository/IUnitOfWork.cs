@@ -19,5 +19,10 @@
         IUnitOfMeasureRepository UnitsOfMeasure { get; }
 
         Task CompleteAsync();
+
+        Task BeginTransactionAsync();
+        Task CommitTransactionAsync();
+        Task RollbackTransactionAsync();
+        void ClearTracking();
     }
 }
