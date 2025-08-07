@@ -7,5 +7,10 @@
     public class SupplyItemRepository(WarehouseContext context)
         : GenericRepository<SupplyItem>(context), ISupplyItemRepository
     {
+        public async Task AddRangeAsync(IEnumerable<SupplyItem> items)
+        {
+            await _context.Set<SupplyItem>()
+                .AddRangeAsync(items);
+        }
     }
 }

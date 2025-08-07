@@ -1,6 +1,7 @@
-﻿namespace Warehouse.DataAccess.Repository
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace Warehouse.DataAccess.Repository
 {
-    using Microsoft.EntityFrameworkCore;
     using Warehouse.BusinessLogic.Models;
     using Warehouse.BusinessLogic.Repository;
     using Warehouse.DataAccess.Models;
@@ -47,6 +48,15 @@
             return await _context.SupplyDocuments
                 .Include(d => d.Items).ThenInclude(i => i.Resource)
                 .Include(d => d.Items).ThenInclude(i => i.Unit)
+                .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
+        }
+
+        public async Task<SupplyDocument?> GetWithItemsNoTrackingAsync(Guid id)
+        {
+            return await _context.SupplyDocuments
+                .Include(d => d.Items).ThenInclude(i => i.Resource)
+                .Include(d => d.Items).ThenInclude(i => i.Unit)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
         }
     }
