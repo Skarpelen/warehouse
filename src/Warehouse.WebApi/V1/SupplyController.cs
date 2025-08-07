@@ -42,7 +42,7 @@ namespace Warehouse.WebApi.V1
 
             try
             {
-                var doc = await supplyService.GetByIdAsync(id);
+                var doc = await supplyService.GetByIdAsync(id, false);
                 return Ok(mapper.Map<SupplyDocumentDTO>(doc));
             }
             catch (KeyNotFoundException)
@@ -88,10 +88,10 @@ namespace Warehouse.WebApi.V1
 
             try
             {
-                _ = await supplyService.GetByIdAsync(id);
+                _ = await supplyService.GetByIdAsync(id, false);
                 var model = mapper.Map<SupplyDocument>(dto);
                 await supplyService.UpdateAsync(id, model);
-                var updated = await supplyService.GetByIdAsync(id);
+                var updated = await supplyService.GetByIdAsync(id, false);
                 return Ok(mapper.Map<SupplyDocumentDTO>(updated));
             }
             catch (KeyNotFoundException)

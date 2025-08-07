@@ -60,8 +60,7 @@ namespace Warehouse.WebApi.V1
             _log.Trace("Create Resource Name={Name}", dto.Name);
             var model = new Resource
             {
-                Name = dto.Name,
-                IsDeleted = dto.IsDeleted
+                Name = dto.Name
             };
 
             try
@@ -98,8 +97,7 @@ namespace Warehouse.WebApi.V1
                 var model = new Resource
                 {
                     Id = dto.Id,
-                    Name = dto.Name,
-                    IsDeleted = dto.IsDeleted
+                    Name = dto.Name
                 };
 
                 await resourceService.UpdateAsync(id, model);
@@ -119,6 +117,26 @@ namespace Warehouse.WebApi.V1
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointSummary("Deletes a resource")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            _log.Trace("Delete Resource Id={Id}", id);
+
+            try
+            {
+                _ = await resourceService.GetByIdAsync(id);
+                await resourceService.DeleteAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPost("archive/{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [EndpointSummary("Archives a resource")]
         public async Task<IActionResult> Archive(Guid id)
         {
@@ -128,6 +146,26 @@ namespace Warehouse.WebApi.V1
             {
                 _ = await resourceService.GetByIdAsync(id);
                 await resourceService.ArchiveAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPost("unarchive/{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointSummary("Unarchives a resource")]
+        public async Task<IActionResult> Unarchive(Guid id)
+        {
+            _log.Trace("Unarchive Resource Id={Id}", id);
+
+            try
+            {
+                _ = await resourceService.GetByIdAsync(id);
+                await resourceService.UnarchiveAsync(id);
                 return NoContent();
             }
             catch (KeyNotFoundException)

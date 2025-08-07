@@ -61,8 +61,7 @@ namespace Warehouse.WebApi.V1
             var client = new Client
             {
                 Name = dto.Name,
-                Address = dto.Address,
-                IsDeleted = dto.IsDeleted
+                Address = dto.Address
             };
 
             try
@@ -102,8 +101,7 @@ namespace Warehouse.WebApi.V1
                 {
                     Id = dto.Id,
                     Name = dto.Name,
-                    Address = dto.Address,
-                    IsDeleted = dto.IsDeleted
+                    Address = dto.Address
                 };
 
                 await clientService.UpdateAsync(id, toUpdate);
@@ -126,22 +124,63 @@ namespace Warehouse.WebApi.V1
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [EndpointSummary("Archives (soft-deletes) a client by ID")]
-        public async Task<IActionResult> DeleteClient(Guid id)
+        [EndpointSummary("Deletes a client")]
+        public async Task<IActionResult> Delete(Guid id)
         {
-            _log.Trace("DeleteClient called for Id={Id}", id);
+            _log.Trace("Delete Client Id={Id}", id);
 
             try
             {
                 _ = await clientService.GetByIdAsync(id);
-
-                await clientService.ArchiveAsync(id);
-                _log.Trace("DeleteClient archived Id={Id}", id);
+                await clientService.DeleteAsync(id);
                 return NoContent();
             }
             catch (KeyNotFoundException)
             {
-                _log.Error("DeleteClient: id={Id} not found", id);
+                return NotFound();
+            }
+        }
+
+        [HttpPost("archive/{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointSummary("Archives a client by ID")]
+        public async Task<IActionResult> Archive(Guid id)
+        {
+            _log.Trace("Archive called for Id={Id}", id);
+
+            try
+            {
+                _ = await clientService.GetByIdAsync(id);
+                await clientService.ArchiveAsync(id);
+                _log.Trace("Archive archived Id={Id}", id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                _log.Error("Archive: id={Id} not found", id);
+                return NotFound();
+            }
+        }
+
+        [HttpPost("unarchive/{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointSummary("Unarchives a client by ID")]
+        public async Task<IActionResult> Unarchive(Guid id)
+        {
+            _log.Trace("Unarchive called for Id={Id}", id);
+
+            try
+            {
+                _ = await clientService.GetByIdAsync(id);
+                await clientService.UnarchiveAsync(id);
+                _log.Trace("Unarchive Id={Id}", id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                _log.Error("Unarchive: id={Id} not found", id);
                 return NotFound();
             }
         }

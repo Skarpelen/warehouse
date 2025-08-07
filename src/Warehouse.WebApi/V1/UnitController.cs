@@ -15,7 +15,7 @@ namespace Warehouse.WebApi.V1
     [ApiVersion("1.0")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public class UnitController(IUnitOfMeasureService service, IMapper mapper) 
+    public class UnitController(IUnitOfMeasureService service, IMapper mapper)
         : ControllerBase
     {
         private readonly Logger _log = LogManager.GetCurrentClassLogger();
@@ -58,10 +58,9 @@ namespace Warehouse.WebApi.V1
         {
             _log.Trace("Create Unit Name={Name}", dto.Name);
 
-            var model = new UnitOfMeasure 
-            { 
-                Name = dto.Name, 
-                IsDeleted = dto.IsDeleted
+            var model = new UnitOfMeasure
+            {
+                Name = dto.Name
             };
 
             try
@@ -93,7 +92,11 @@ namespace Warehouse.WebApi.V1
             try
             {
                 _ = await service.GetByIdAsync(id);
-                var model = new UnitOfMeasure { Id = dto.Id, Name = dto.Name, IsDeleted = dto.IsDeleted };
+                var model = new UnitOfMeasure
+                {
+                    Id = dto.Id,
+                    Name = dto.Name
+                };
                 await service.UpdateAsync(id, model);
                 var updated = await service.GetByIdAsync(id);
                 return Ok(mapper.Map<UnitDTO>(updated));
@@ -111,15 +114,35 @@ namespace Warehouse.WebApi.V1
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [EndpointSummary("Archives a unit of measure")]
-        public async Task<IActionResult> Archive(Guid id)
+        [EndpointSummary("Deletes a unit of measure")]
+        public async Task<IActionResult> Delete(Guid id)
         {
-            _log.Trace("Archive Unit Id={Id}", id);
+            _log.Trace("Delete Unit Id={Id}", id);
 
             try
             {
                 _ = await service.GetByIdAsync(id);
-                await service.ArchiveAsync(id);
+                await service.DeleteAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPost("unarchive/{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointSummary("Unarchives a unit of measure")]
+        public async Task<IActionResult> Unarchive(Guid id)
+        {
+            _log.Trace("Unarchive Unit Id={Id}", id);
+
+            try
+            {
+                _ = await service.GetByIdAsync(id);
+                await service.UnarchiveAsync(id);
                 return NoContent();
             }
             catch (KeyNotFoundException)
