@@ -204,6 +204,24 @@ namespace Warehouse.Client.Services
             return await MapResponseAsync<TRes>(response);
         }
 
+        private async Task<ResultCode> PostAsync(string uri)
+        {
+            var response = await Client.PostAsync(uri, new StringContent(string.Empty));
+
+            if (response.IsSuccessStatusCode)
+            {
+                return ResultCode.Ok;
+            }
+            else if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                return ResultCode.Unauthorized;
+            }
+            else
+            {
+                return ResultCode.Error;
+            }
+        }
+
         private async Task<ResultCode> PutAsync<TBody>(string uri, TBody body)
         {
             var json = JsonSerializer.Serialize(body);
@@ -273,6 +291,18 @@ namespace Warehouse.Client.Services
             return new ActionResult(code);
         }
 
+        public async Task<ActionResult> ArchiveClient(Guid id)
+        {
+            var code = await PostAsync($"client/archive/{id}");
+            return new ActionResult(code);
+        }
+
+        public async Task<ActionResult> UnarchiveClient(Guid id)
+        {
+            var code = await PostAsync($"client/unarchive/{id}");
+            return new ActionResult(code);
+        }
+
         public async Task<GetResourcesResult> GetAllResources(bool includeArchived = false)
         {
             var uri = $"resource?includeArchived={includeArchived}";
@@ -298,9 +328,21 @@ namespace Warehouse.Client.Services
             return new ActionResult(code);
         }
 
-        public async Task<ActionResult> ArchiveResource(Guid id)
+        public async Task<ActionResult> DeleteResource(Guid id)
         {
             var code = await DeleteAsync($"resource/{id}");
+            return new ActionResult(code);
+        }
+
+        public async Task<ActionResult> ArchiveResource(Guid id)
+        {
+            var code = await PostAsync($"resource/archive/{id}");
+            return new ActionResult(code);
+        }
+
+        public async Task<ActionResult> UnarchiveResource(Guid id)
+        {
+            var code = await PostAsync($"resource/unarchive/{id}");
             return new ActionResult(code);
         }
 
@@ -403,9 +445,21 @@ namespace Warehouse.Client.Services
             return new ActionResult(code);
         }
 
-        public async Task<ActionResult> ArchiveUnit(Guid id)
+        public async Task<ActionResult> DeleteUnit(Guid id)
         {
             var code = await DeleteAsync($"unit/{id}");
+            return new ActionResult(code);
+        }
+
+        public async Task<ActionResult> ArchiveUnit(Guid id)
+        {
+            var code = await PostAsync($"unit/archive/{id}");
+            return new ActionResult(code);
+        }
+
+        public async Task<ActionResult> UnarchiveUnit(Guid id)
+        {
+            var code = await PostAsync($"unit/unarchive/{id}");
             return new ActionResult(code);
         }
     }

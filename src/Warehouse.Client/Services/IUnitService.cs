@@ -12,6 +12,8 @@
         Task<GetUnitResult> GetUnit(Guid id);
         Task<CreateUnitResult> CreateUnit(UnitDTO dto);
         Task<ActionResult> UpdateUnit(UnitDTO dto);
+        Task<ActionResult> DeleteUnit(Guid id);
         Task<ActionResult> ArchiveUnit(Guid id);
+        Task<ActionResult> UnarchiveUnit(Guid id);
     }
 }

@@ -12,6 +12,8 @@
         Task<GetResourceResult> GetResource(Guid id);
         Task<CreateResourceResult> CreateResource(ResourceDTO dto);
         Task<ActionResult> UpdateResource(ResourceDTO dto);
+        Task<ActionResult> DeleteResource(Guid id);
         Task<ActionResult> ArchiveResource(Guid id);
+        Task<ActionResult> UnarchiveResource(Guid id);
     }
 }

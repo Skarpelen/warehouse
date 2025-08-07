@@ -13,5 +13,7 @@
         Task<CreateClientResult> CreateClient(ClientDTO dto);
         Task<ActionResult> UpdateClient(ClientDTO dto);
         Task<ActionResult> DeleteClient(Guid id);
+        Task<ActionResult> ArchiveClient(Guid id);
+        Task<ActionResult> UnarchiveClient(Guid id);
     }
 }
