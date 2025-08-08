@@ -56,6 +56,9 @@ namespace Warehouse.Server
                 options.ModelMetadataDetailsProviders.Add(
                     new SuppressChildValidationMetadataProvider(typeof(UnitDTO))
                 );
+                options.ModelMetadataDetailsProviders.Add(
+                    new SuppressChildValidationMetadataProvider(typeof(ClientDTO))
+                );
             });
             controllersBuilder.PartManager.ApplicationParts.Add(new AssemblyPart(typeof(ClientController).Assembly));
             controllersBuilder
