@@ -72,8 +72,7 @@ else
                            Label="Дата"
                            @bind-Date="_date"
                            Disabled="!IsEditMode"
-                           Required="true"
-                           Immediate="true" />
+                           Required="true" />
         </MudPaper>
 
         <MudPaper Class="pa-4">
@@ -93,8 +92,6 @@ else
                             <MudNumericField T="decimal"
                                              For="@(() => context.Quantity)"
                                              @bind-Value="context.Quantity"
-                                             Required="true"
-                                             Min="1"
                                              Immediate="true" />
                         </MudTd>
                         <MudTd>@context.Available</MudTd>

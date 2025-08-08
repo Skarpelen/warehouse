@@ -14,20 +14,20 @@
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
-            <MudSelect T="string"
-                       Label="Номер поступления"
-                       @bind-Value="_selectedNumber"
-                       Dense="true">
-                <MudSelectItem T="string" Value="string.Empty">
-                    Выбрать
-                </MudSelectItem>
-                @foreach (var num in _numbers)
-                {
-                    <MudSelectItem T="string" Value="@num">
-                        @num
-                    </MudSelectItem>
-                }
-            </MudSelect>
+            <MudText Typo="Typo.subtitle2">Номер поступления</MudText>
+	        <MudSelect T="string"
+	                   @bind-Value="_selectedNumber"
+	                   Dense="true">
+		        <MudSelectItem T="string" Value="string.Empty">
+			        Выбрать
+		        </MudSelectItem>
+		        @foreach (var num in _numbers)
+		        {
+			        <MudSelectItem T="string" Value="@num">
+				        @num
+			        </MudSelectItem>
+		        }
+	        </MudSelect>
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
