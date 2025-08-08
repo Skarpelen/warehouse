@@ -10,5 +10,10 @@ namespace Warehouse.Shared.DTO
         public string Name { get; set; } = string.Empty;
 
         public bool IsArchived { get; set; }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }
