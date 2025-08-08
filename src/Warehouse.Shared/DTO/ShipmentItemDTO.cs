@@ -15,13 +15,13 @@ namespace Warehouse.Shared.DTO
         [Required(ErrorMessage = "Единица измерения обязательна")]
         public Guid UnitOfMeasureId { get; set; }
 
-        [Range(1, double.MaxValue, ErrorMessage = "Количество должно быть больше 0")]
+        [Range(0, double.MaxValue, ErrorMessage = "Количество должно быть больше 0")]
         public decimal Quantity { get; set; }
 
         [JsonIgnore]
         public decimal Available { get; set; }
 
-        public ResourceDTO Resource { get; set; } = new ResourceDTO();
-        public UnitDTO Unit { get; set; } = new UnitDTO();
+        public ResourceDTO Resource { get; set; } = new();
+        public UnitDTO Unit { get; set; } = new();
     }
 }

@@ -17,9 +17,9 @@ namespace Warehouse.Shared.DTO
 
         public ShipmentStatus Status { get; set; }
 
-        public ClientDTO Client { get; set; } = new ClientDTO();
+        public ClientDTO Client { get; set; } = new();
 
         [MinLength(1, ErrorMessage = "Должна быть хотя бы одна позиция")]
-        public List<ShipmentItemDTO> Items { get; set; } = new List<ShipmentItemDTO>();
+        public List<ShipmentItemDTO> Items { get; set; } = new();
     }
 }

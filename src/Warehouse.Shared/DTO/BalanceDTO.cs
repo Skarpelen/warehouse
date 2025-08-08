@@ -15,7 +15,7 @@ namespace Warehouse.Shared.DTO
         [Range(0, double.MaxValue)]
         public decimal Quantity { get; set; }
 
-        public ResourceDTO Resource { get; set; } = new ResourceDTO();
-        public UnitDTO Unit { get; set; } = new UnitDTO();
+        public ResourceDTO Resource { get; set; } = new();
+        public UnitDTO Unit { get; set; } = new();
     }
 }
