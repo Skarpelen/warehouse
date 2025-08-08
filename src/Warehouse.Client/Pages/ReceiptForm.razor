@@ -16,17 +16,17 @@
 		           Disabled="_isSaving">
 			Сохранить
 		</MudButton>
+        
+		@if (Id != Guid.Empty)
+		{
+			<MudButton Variant="Variant.Outlined"
+			           Color="Color.Error"
+			           OnClick="Delete"
+			           Disabled="_isSaving">
+				Удалить
+			</MudButton>
+		}
 	</MudStack>
-    
-	@if (Id != Guid.Empty)
-	{
-		<MudButton Variant="Variant.Outlined"
-		           Color="Color.Error"
-		           OnClick="Delete"
-		           Disabled="_isSaving">
-			Удалить
-		</MudButton>
-	}
 
 	<MudPaper Class="pa-4 mt-4">
         <MudTextField T="string"
