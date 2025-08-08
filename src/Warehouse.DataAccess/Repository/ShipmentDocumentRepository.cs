@@ -31,6 +31,11 @@ namespace Warehouse.DataAccess.Repository
                 query = query.Where(d => filter.Numbers.Contains(d.Number));
             }
 
+            if (filter.ClientIds?.Any() == true)
+            {
+                query = query.Where(d => filter.ClientIds.Contains(d.ClientId));
+            }
+
             if (filter.ResourceIds?.Any() == true)
             {
                 query = query.Where(d => d.Items.Any(i => filter.ResourceIds.Contains(i.ResourceId)));
