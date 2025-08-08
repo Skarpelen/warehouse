@@ -32,5 +32,14 @@ namespace Warehouse.DataAccess.Repository
 
             return await query.ToListAsync();
         }
+
+        public async Task<bool> IsInUseAsync(Guid clientId)
+        {
+            return await _context.ShipmentDocuments
+                .AsNoTracking()
+                .Where(s => s.ClientId == clientId)
+                .Select(s => s.Id)
+                .AnyAsync();
+        }
     }
 }

@@ -32,5 +32,24 @@ namespace Warehouse.DataAccess.Repository
 
             return await query.ToListAsync();
         }
+
+        public async Task<bool> IsInUseAsync(Guid resourceId)
+        {
+            var usageIds = _context.Balances
+                .Where(b => b.ResourceId == resourceId)
+                .Select(b => b.Id)
+                .Concat(
+                    _context.SupplyItems
+                        .Where(si => si.ResourceId == resourceId)
+                        .Select(si => si.Id)
+                )
+                .Concat(
+                    _context.ShipmentItems
+                        .Where(si => si.ResourceId == resourceId)
+                        .Select(si => si.Id)
+                );
+
+            return await usageIds.AnyAsync();
+        }
     }
 }
