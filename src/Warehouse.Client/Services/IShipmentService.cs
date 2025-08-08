@@ -5,7 +5,7 @@
 
     public readonly record struct GetShipmentsResult(ResultCode Result, IEnumerable<ShipmentDocumentDTO>? Response);
     public readonly record struct GetShipmentResult(ResultCode Result, ShipmentDocumentDTO? Response);
-    public readonly record struct CreateShipmentResult(ResultCode Result, ShipmentDocumentDTO? Shipment);
+    public readonly record struct CreateShipmentResult(ResultCode Result, ShipmentDocumentDTO? Response);
 
     public interface IShipmentService
     {

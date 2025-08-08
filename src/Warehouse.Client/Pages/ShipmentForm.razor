@@ -132,7 +132,7 @@ else
     private bool _isSaving;
     private MudForm _form = default!;
 
-    private bool IsEditMode => Id == Guid.Empty || _status == ShipmentStatus.Draft;
+    private bool IsEditMode => Id == Guid.Empty || _status != ShipmentStatus.Signed;
 
     protected override async Task OnInitializedAsync()
     {
@@ -257,18 +257,63 @@ else
 
     private async Task SaveAndSign()
     {
-        await Save();
+	    await _form.Validate();
+	    if (!_form.IsValid)
+	    {
+		    Toast.ShowError("Пожалуйста, исправьте ошибки в форме");
+		    return;
+	    }
 
-        if (Id != Guid.Empty)
-        {
-            var signRes = await Api.SignShipment(Id);
+	    _isSaving = true;
 
-            if (signRes.Result != ResultCode.Ok)
-            {
-                Toast.ShowError("Ошибка при подписи");
-            }
-        }
+	    var dto = new ShipmentDocumentDTO
+	    {
+		    Id = Id,
+		    Number = _number,
+		    ClientId = _clientId,
+		    Date = _date!.Value,
+		    Items = _items
+	    };
+
+	    ResultCode saveResult;
+
+	    if (Id == Guid.Empty)
+	    {
+		    var createRes = await Api.CreateShipment(dto);
+		    saveResult = createRes.Result;
+
+		    if (saveResult == ResultCode.Ok)
+		    {
+			    Id = createRes.Response.Id;
+		    }
+	    }
+	    else
+	    {
+		    var updateRes = await Api.UpdateShipment(dto);
+		    saveResult = updateRes.Result;
+	    }
+
+	    if (saveResult != ResultCode.Ok)
+	    {
+		    Toast.ShowError("Ошибка при сохранении");
+		    _isSaving = false;
+		    return;
+	    }
+
+	    var signRes = await Api.SignShipment(Id);
+
+	    if (signRes.Result != ResultCode.Ok)
+	    {
+		    Toast.ShowError("Ошибка при подписи");
+		    _isSaving = false;
+		    return;
+	    }
+
+	    Nav.NavigateTo("/shipments");
+
+	    _isSaving = false;
     }
+
 
     private async Task Revoke()
     {
