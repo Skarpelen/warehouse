@@ -31,8 +31,18 @@ else
                            Color="Color.Success"
                            OnClick="SaveAndSign"
                            Disabled="_isSaving">
-                    Сохранить и подписать
+	                Сохранить и подписать
                 </MudButton>
+
+                @if (Id != Guid.Empty && _status != ShipmentStatus.Signed)
+                {
+	                <MudButton Variant="Variant.Outlined"
+	                           Color="Color.Error"
+	                           OnClick="Delete"
+	                           Disabled="_isSaving">
+		                Удалить
+	                </MudButton>
+                }
             }
             else
             {
@@ -314,6 +324,23 @@ else
 	    _isSaving = false;
     }
 
+    private async Task Delete()
+    {
+	    _isSaving = true;
+
+	    var deleteRes = await Api.DeleteShipment(Id);
+
+	    if (deleteRes.Result == ResultCode.Ok)
+	    {
+		    Nav.NavigateTo("/shipments");
+	    }
+	    else
+	    {
+		    Toast.ShowError("Ошибка при удалении");
+	    }
+
+	    _isSaving = false;
+    }
 
     private async Task Revoke()
     {

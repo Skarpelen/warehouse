@@ -10,15 +10,25 @@
 <h3>Поступление</h3>
 
 <MudForm @ref="_form">
-    <MudStack Row="true" Spacing="2" Class="mb-4">
-        <MudButton Variant="Variant.Filled"
-                   OnClick="Save"
-                   Disabled="_isSaving">
-            Сохранить
-        </MudButton>
-    </MudStack>
+	<MudStack Row="true" Spacing="2" Class="mb-4">
+		<MudButton Variant="Variant.Filled"
+		           OnClick="Save"
+		           Disabled="_isSaving">
+			Сохранить
+		</MudButton>
+	</MudStack>
+    
+	@if (Id != Guid.Empty)
+	{
+		<MudButton Variant="Variant.Outlined"
+		           Color="Color.Error"
+		           OnClick="Delete"
+		           Disabled="_isSaving">
+			Удалить
+		</MudButton>
+	}
 
-    <MudPaper Class="pa-4 mt-4">
+	<MudPaper Class="pa-4 mt-4">
         <MudTextField T="string"
                       For="@(() => _number)"
                       Label="Номер"
@@ -28,8 +38,7 @@
         <MudDatePicker For="@(() => _date)"
                        Label="Дата"
                        @bind-Date="_date"
-                       Required="true"
-                       Immediate="true" />
+                       Required="true" />
     </MudPaper>
 
     <MudPaper Class="pa-4 mt-4">
@@ -195,6 +204,24 @@
         else
         {
             Toast.ShowError("Ошибка при сохранении");
+        }
+
+        _isSaving = false;
+    }
+
+    private async Task Delete()
+    {
+        _isSaving = true;
+
+        var deleteRes = await Api.DeleteSupply(Id);
+
+        if (deleteRes.Result == ResultCode.Ok)
+        {
+            Nav.NavigateTo("/receipts");
+        }
+        else
+        {
+            Toast.ShowError("Ошибка при удалении");
         }
 
         _isSaving = false;
