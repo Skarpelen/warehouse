@@ -15,6 +15,7 @@ namespace Warehouse.BusinessLogic.Services
         Task<IEnumerable<ShipmentDocument>> GetFilteredAsync(DocumentFilter filter);
         Task UpdateAsync(Guid id, ShipmentDocument document);
         Task ChangeStatusAsync(Guid id, ShipmentStatus newStatus);
+        Task DeleteAsync(Guid id);
     }
 
     public class ShipmentDocumentService(IUnitOfWork unitOfWork, IBalanceService balanceService) : IShipmentDocumentService
@@ -34,6 +35,33 @@ namespace Warehouse.BusinessLogic.Services
             if (document.Items == null || !document.Items.Any())
             {
                 throw new InvalidOperationException("Shipment cannot be empty.");
+            }
+
+            var client = await unitOfWork.Clients.Get(document.ClientId);
+
+            if (client.IsArchived)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot use archived client '{client.Name}'.");
+            }
+
+            foreach (var item in document.Items)
+            {
+                var res = await unitOfWork.Resources.Get(item.ResourceId);
+
+                if (res.IsArchived)
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot use archived resource '{res.Id}'.");
+                }
+
+                var unit = await unitOfWork.UnitsOfMeasure.Get(item.UnitOfMeasureId);
+
+                if (unit.IsArchived)
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot use archived unit '{unit.Id}'.");
+                }
             }
 
             await unitOfWork.ShipmentDocuments.Add(document);
@@ -77,12 +105,54 @@ namespace Warehouse.BusinessLogic.Services
 
         public async Task UpdateAsync(Guid id, ShipmentDocument updated)
         {
+            if (updated.Items == null || !updated.Items.Any())
+            {
+                throw new InvalidOperationException("Shipment cannot be empty.");
+            }
+
             await unitOfWork.BeginTransactionAsync();
 
             try
             {
                 var doc = await unitOfWork.ShipmentDocuments.GetWithItemsAsync(id)
                           ?? throw new KeyNotFoundException($"Shipment '{id}' not found.");
+
+                if (doc.ClientId != updated.ClientId)
+                {
+                    var client = await unitOfWork.Clients.Get(updated.ClientId);
+
+                    if (client.IsArchived)
+                    {
+                        throw new InvalidOperationException(
+                            $"Cannot use archived client '{client.Name}'.");
+                    }
+                }
+
+                var existingIds = doc.Items.Select(i => i.Id).ToHashSet();
+
+                foreach (var item in updated.Items)
+                {
+                    if (!existingIds.Contains(item.Id)
+                        || doc.Items.First(i => i.Id == item.Id).ResourceId != item.ResourceId
+                        || doc.Items.First(i => i.Id == item.Id).UnitOfMeasureId != item.UnitOfMeasureId)
+                    {
+                        var res = await unitOfWork.Resources.Get(item.ResourceId);
+
+                        if (res.IsArchived)
+                        {
+                            throw new InvalidOperationException(
+                                $"Cannot use archived resource '{res.Id}'.");
+                        }
+
+                        var unit = await unitOfWork.UnitsOfMeasure.Get(item.UnitOfMeasureId);
+
+                        if (unit.IsArchived)
+                        {
+                            throw new InvalidOperationException(
+                                $"Cannot use archived unit '{unit.Id}'.");
+                        }
+                    }
+                }
 
                 if (!doc.Number.Equals(updated.Number, StringComparison.OrdinalIgnoreCase))
                 {
@@ -163,12 +233,11 @@ namespace Warehouse.BusinessLogic.Services
 
             if (newStatus == ShipmentStatus.Signed)
             {
-                var adjusts = document.Items
-                    .Select(i => new BalanceAdjustment(
-                        i.ResourceId,
-                        i.UnitOfMeasureId,
-                        -i.Quantity));
-                await balanceService.AdjustBatchAsync(adjusts);
+                var adjustments = document.Items
+                    .Select(i => new BalanceAdjustment(i.ResourceId, i.UnitOfMeasureId, -i.Quantity));
+
+                await balanceService.ValidateBatchAsync(adjustments);
+                await balanceService.AdjustBatchAsync(adjustments);
             }
             else if (newStatus == ShipmentStatus.Revoked)
             {
@@ -197,6 +266,13 @@ namespace Warehouse.BusinessLogic.Services
             await unitOfWork.CompleteAsync();
 
             _log.Info($"Shipment status changed [Id={id}].");
+        }
+
+        public async Task DeleteAsync(Guid id)
+        {
+            await unitOfWork.ShipmentDocuments.SoftDelete(id);
+            await unitOfWork.CompleteAsync();
+            _log.Info($"Deleted shipment document [Id={id}].");
         }
     }
 }

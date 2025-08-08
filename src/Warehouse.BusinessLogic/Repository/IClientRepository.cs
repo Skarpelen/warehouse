@@ -6,5 +6,6 @@
     public interface IClientRepository : IGenericRepository<Client>
     {
         Task<IEnumerable<Client>> GetAllFiltered(ClientFilter filter);
+        Task<bool> IsInUseAsync(Guid clientId);
     }
 }

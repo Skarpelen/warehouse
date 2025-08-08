@@ -96,6 +96,14 @@ namespace Warehouse.BusinessLogic.Services
                 return;
             }
 
+            var isInUse = await unitOfWork.Resources.IsInUseAsync(id);
+
+            if (isInUse)
+            {
+                throw new InvalidOperationException(
+                    "Resource is in use and cannot be deleted. Consider archiving instead.");
+            }
+
             await unitOfWork.Resources.SoftDelete(id);
             await unitOfWork.CompleteAsync();
 

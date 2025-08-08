@@ -100,6 +100,14 @@ namespace Warehouse.BusinessLogic.Services
                 return;
             }
 
+            var isInUse = await unitOfWork.Clients.IsInUseAsync(id);
+
+            if (isInUse)
+            {
+                throw new InvalidOperationException(
+                    "Client is in use and cannot be deleted. Consider archiving instead.");
+            }
+
             await unitOfWork.Clients.SoftDelete(id);
             await unitOfWork.CompleteAsync();
 

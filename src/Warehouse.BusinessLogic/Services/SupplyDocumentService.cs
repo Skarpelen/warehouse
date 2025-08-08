@@ -24,6 +24,25 @@ namespace Warehouse.BusinessLogic.Services
         {
             doc.Items ??= Enumerable.Empty<SupplyItem>().ToList();
 
+            foreach (var item in doc.Items)
+            {
+                var res = await unitOfWork.Resources.Get(item.ResourceId);
+
+                if (res.IsArchived)
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot use archived resource '{res.Id}'.");
+                }
+
+                var unit = await unitOfWork.UnitsOfMeasure.Get(item.UnitOfMeasureId);
+
+                if (unit.IsArchived)
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot use archived unit '{unit.Id}'.");
+                }
+            }
+
             var exists = await unitOfWork.SupplyDocuments.GetAll();
 
             if (exists.Any(x => x.Number == doc.Number))
@@ -81,6 +100,15 @@ namespace Warehouse.BusinessLogic.Services
 
         public async Task UpdateAsync(Guid id, SupplyDocument updated)
         {
+            var allDocs = await unitOfWork.SupplyDocuments.GetAll();
+
+            if (allDocs.Any(d => d.Number == updated.Number && d.Id != id))
+            {
+                _log.Warn($"Duplicate supply number '{updated.Number}'.");
+                throw new InvalidOperationException($"Number '{updated.Number}' already exists.");
+            }
+
+
             await unitOfWork.BeginTransactionAsync();
 
             try
@@ -88,6 +116,33 @@ namespace Warehouse.BusinessLogic.Services
                 var doc = await unitOfWork.SupplyDocuments.GetWithItemsAsync(id);
                 doc.Number = updated.Number;
                 doc.Date = updated.Date;
+
+                var existingIds = doc.Items.Select(i => i.Id).ToHashSet();
+
+                foreach (var item in updated.Items)
+                {
+                    if (!existingIds.Contains(item.Id)
+                        || doc.Items.First(i => i.Id == item.Id).ResourceId != item.ResourceId
+                        || doc.Items.First(i => i.Id == item.Id).UnitOfMeasureId != item.UnitOfMeasureId)
+                    {
+                        var res = await unitOfWork.Resources.Get(item.ResourceId);
+
+                        if (res.IsArchived)
+                        {
+                            throw new InvalidOperationException(
+                                $"Cannot use archived resource '{res.Id}'.");
+                        }
+
+                        var unit = await unitOfWork.UnitsOfMeasure.Get(item.UnitOfMeasureId);
+
+                        if (unit.IsArchived)
+                        {
+                            throw new InvalidOperationException(
+                                $"Cannot use archived unit '{unit.Id}'.");
+                        }
+                    }
+                }
+
                 await unitOfWork.CompleteAsync();
 
                 var toRemove = doc.Items
@@ -158,6 +213,7 @@ namespace Warehouse.BusinessLogic.Services
                 await unitOfWork.SupplyItems.AddRangeAsync(adds);
                 await unitOfWork.CompleteAsync();
 
+                await balanceService.ValidateBatchAsync(adjustments);
                 await balanceService.AdjustBatchAsync(adjustments);
 
                 await unitOfWork.CommitTransactionAsync();
@@ -196,6 +252,7 @@ namespace Warehouse.BusinessLogic.Services
                     i.ResourceId,
                     i.UnitOfMeasureId,
                     -i.Quantity));
+
             await balanceService.AdjustBatchAsync(removes);
 
             await unitOfWork.SupplyDocuments.SoftDelete(id);
