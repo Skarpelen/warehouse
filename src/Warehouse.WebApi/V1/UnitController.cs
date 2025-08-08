@@ -131,6 +131,28 @@ namespace Warehouse.WebApi.V1
             }
         }
 
+        [HttpPost("archive/{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [EndpointSummary("Archives a unit by ID")]
+        public async Task<IActionResult> Archive(Guid id)
+        {
+            _log.Trace("Archive called for Id={Id}", id);
+
+            try
+            {
+                _ = await service.GetByIdAsync(id);
+                await service.ArchiveAsync(id);
+                _log.Trace("Unit archived Id={Id}", id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                _log.Error("Archive: Unit id={Id} not found", id);
+                return NotFound();
+            }
+        }
+
         [HttpPost("unarchive/{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
