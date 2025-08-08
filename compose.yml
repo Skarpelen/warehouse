@@ -12,6 +12,20 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  warehouse:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "7144:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+
+      - Databases__Postgres__ConnectionString=Host=postgres;Port=5432;Database=WarehouseDB;Username=postgres;Password=postgres;Include Error Detail=true
+
+      - UsedDatabase=Postgres
+      - AllowedHosts=*
 
 volumes:
   postgres_data:
