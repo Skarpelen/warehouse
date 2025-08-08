@@ -117,6 +117,11 @@ namespace Warehouse.BusinessLogic.Services
                 var doc = await unitOfWork.ShipmentDocuments.GetWithItemsAsync(id)
                           ?? throw new KeyNotFoundException($"Shipment '{id}' not found.");
 
+                if (doc.Status == ShipmentStatus.Signed)
+                {
+                    throw new InvalidOperationException("Cannot edit signed shipments.");
+                }
+
                 if (doc.ClientId != updated.ClientId)
                 {
                     var client = await unitOfWork.Clients.Get(updated.ClientId);

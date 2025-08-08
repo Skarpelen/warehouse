@@ -12,7 +12,6 @@ namespace Warehouse.Shared.DTO
         [Required(ErrorMessage = "Дата обязателена")]
         public DateTimeOffset Date { get; set; }
 
-        [MinLength(1, ErrorMessage = "Должна быть хотя бы одна позиция")]
         public List<SupplyItemDTO> Items { get; set; } = new();
     }
 }
