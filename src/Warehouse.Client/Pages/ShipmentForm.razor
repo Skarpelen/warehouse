@@ -22,34 +22,34 @@ else
             @if (IsEditMode)
             {
                 <MudButton Variant="Variant.Filled"
-                           Color="Color.Success"
-                           OnClick="Save"
-                           Disabled="_isSaving">
+                Color="Color.Success"
+                OnClick="Save"
+                Disabled="_isSaving">
                     Сохранить
                 </MudButton>
                 <MudButton Variant="Variant.Outlined"
-                           Color="Color.Success"
-                           OnClick="SaveAndSign"
-                           Disabled="_isSaving">
-	                Сохранить и подписать
+                Color="Color.Success"
+                OnClick="SaveAndSign"
+                Disabled="_isSaving">
+                    Сохранить и подписать
                 </MudButton>
 
                 @if (Id != Guid.Empty && _status != ShipmentStatus.Signed)
                 {
-	                <MudButton Variant="Variant.Outlined"
-	                           Color="Color.Error"
-	                           OnClick="Delete"
-	                           Disabled="_isSaving">
-		                Удалить
-	                </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                    Color="Color.Error"
+                    OnClick="Delete"
+                    Disabled="_isSaving">
+                        Удалить
+                    </MudButton>
                 }
             }
             else
             {
                 <MudButton Variant="Variant.Filled"
-                           Color="Color.Error"
-                           OnClick="Revoke"
-                           Disabled="_isSaving">
+                Color="Color.Error"
+                OnClick="Revoke"
+                Disabled="_isSaving">
                     Отозвать
                 </MudButton>
             }
@@ -57,20 +57,20 @@ else
 
         <MudPaper Class="pa-4 mb-4">
             <MudTextField T="string"
-                          For="@(() => _number)"
-                          Label="Номер"
-                          @bind-Value="_number"
-                          Disabled="!IsEditMode"
-                          Required="true"
-                          Immediate="true" />
+            For="@(() => _number)"
+            Label="Номер"
+            @bind-Value="_number"
+            Disabled="!IsEditMode"
+            Required="true"
+            Immediate="true" />
 
             <MudSelect T="Guid"
-                       For="@(() => _clientId)"
-                       Label="Клиент"
-                       @bind-Value="_clientId"
-                       Disabled="!IsEditMode"
-                       Dense="true"
-                       Required="true">
+            For="@(() => _clientId)"
+            Label="Клиент"
+            @bind-Value="_clientId"
+            Disabled="!IsEditMode"
+            Dense="true"
+            Required="true">
                 <MudSelectItem T="Guid" Value="Guid.Empty">Выбрать</MudSelectItem>
                 @foreach (var client in _clients)
                 {
@@ -79,10 +79,10 @@ else
             </MudSelect>
 
             <MudDatePicker For="@(() => _date)"
-                           Label="Дата"
-                           @bind-Date="_date"
-                           Disabled="!IsEditMode"
-                           Required="true" />
+            Label="Дата"
+            @bind-Date="_date"
+            Disabled="!IsEditMode"
+            Required="true" />
         </MudPaper>
 
         <MudPaper Class="pa-4">
@@ -100,9 +100,9 @@ else
                         <MudTd>@context.Unit.Name</MudTd>
                         <MudTd>
                             <MudNumericField T="decimal"
-                                             For="@(() => context.Quantity)"
-                                             @bind-Value="context.Quantity"
-                                             Immediate="true" />
+                            For="@(() => context.Quantity)"
+                            @bind-Value="context.Quantity"
+                            Immediate="true" />
                         </MudTd>
                         <MudTd>@context.Available</MudTd>
                     </RowTemplate>
@@ -267,16 +267,16 @@ else
 
     private async Task SaveAndSign()
     {
-	    await _form.Validate();
-	    if (!_form.IsValid)
-	    {
-		    Toast.ShowError("Пожалуйста, исправьте ошибки в форме");
-		    return;
-	    }
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            Toast.ShowError("Пожалуйста, исправьте ошибки в форме");
+            return;
+        }
 
-	    _isSaving = true;
+        _isSaving = true;
 
-	    var dto = new ShipmentDocumentDTO
+        var dto = new ShipmentDocumentDTO
 	    {
 		    Id = Id,
 		    Number = _number,
@@ -285,36 +285,39 @@ else
 		    Items = _items
 	    };
 
-	    ResultCode saveResult;
+        ResultCode saveResult;
+        string? error = null;
 
-	    if (Id == Guid.Empty)
-	    {
-		    var createRes = await Api.CreateShipment(dto);
-		    saveResult = createRes.Result;
+        if (Id == Guid.Empty)
+        {
+            var createRes = await Api.CreateShipment(dto);
+            saveResult = createRes.Result;
 
-		    if (saveResult == ResultCode.Ok)
-		    {
-			    Id = createRes.Response.Id;
-		    }
-	    }
-	    else
-	    {
-		    var updateRes = await Api.UpdateShipment(dto);
-		    saveResult = updateRes.Result;
-	    }
+            if (saveResult == ResultCode.Ok)
+            {
+                Id = createRes.Response.Id;
+            }
+        }
+        else
+        {
+            var updateRes = await Api.UpdateShipment(dto);
+            saveResult = updateRes.Result;
+            error = updateRes.Error;
+        }
 
-	    if (saveResult != ResultCode.Ok)
-	    {
-		    Toast.ShowError("Ошибка при сохранении");
-		    _isSaving = false;
-		    return;
-	    }
+        if (saveResult != ResultCode.Ok)
+        {
+            Toast.ShowError(error ?? "Ошибка при сохранении");
+            _isSaving = false;
+            return;
+        }
 
-	    var signRes = await Api.SignShipment(Id);
+        var signRes = await Api.SignShipment(Id);
 
-	    if (signRes.Result != ResultCode.Ok)
-	    {
-		    Toast.ShowError("Ошибка при подписи");
+        if (signRes.Result != ResultCode.Ok)
+        {
+            error = signRes.Error;
+            Toast.ShowError(error ?? "Ошибка при подписи");
 		    _isSaving = false;
 		    return;
 	    }

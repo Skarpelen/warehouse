@@ -64,10 +64,10 @@ else
     [Parameter] public string Title { get; set; } = string.Empty;
     [Parameter] public Guid Id { get; set; }
     [Parameter] public Func<Guid, Task<(ResultCode, TDto?)>> LoadFunc { get; set; } = _ => throw new InvalidOperationException();
-    [Parameter] public Func<TDto, Task<ResultCode>> SaveFunc { get; set; } = _ => throw new InvalidOperationException();
-    [Parameter] public Func<Guid, Task<ResultCode>> DeleteFunc { get; set; } = _ => throw new InvalidOperationException();
-    [Parameter] public Func<Guid, Task<ResultCode>> ArchiveFunc { get; set; } = _ => throw new InvalidOperationException();
-    [Parameter] public Func<Guid, Task<ResultCode>> UnarchiveFunc { get; set; } = _ => throw new InvalidOperationException();
+    [Parameter] public Func<TDto, Task<ActionResult>> SaveFunc { get; set; } = _ => throw new InvalidOperationException();
+    [Parameter] public Func<Guid, Task<ActionResult>> DeleteFunc { get; set; } = _ => throw new InvalidOperationException();
+    [Parameter] public Func<Guid, Task<ActionResult>> ArchiveFunc { get; set; } = _ => throw new InvalidOperationException();
+    [Parameter] public Func<Guid, Task<ActionResult>> UnarchiveFunc { get; set; } = _ => throw new InvalidOperationException();
     [Parameter] public string ReturnUrl { get; set; } = string.Empty;
     [Parameter] public RenderFragment<TDto> Template { get; set; } = _ => null!;
 
@@ -102,15 +102,15 @@ else
     private async Task HandleValidSubmit()
     {
         _isBusy = true;
-        var code = await SaveFunc(Model);
+        var result = await SaveFunc(Model);
 
-        if (code == ResultCode.Ok)
+        if (result.Result == ResultCode.Ok)
         {
             Nav.NavigateTo(ReturnUrl);
         }
         else
         {
-            Toast.ShowError("Ошибка при сохранении");
+            Toast.ShowError(result.Error ?? "Ошибка при сохранении");
         }
 
         _isBusy = false;
@@ -132,15 +132,15 @@ else
         }
 
         _isBusy = true;
-        var code = await DeleteFunc(Id);
+        var result = await DeleteFunc(Id);
 
-        if (code == ResultCode.Ok)
+        if (result.Result == ResultCode.Ok)
         {
             Nav.NavigateTo(ReturnUrl);
         }
         else
         {
-            Toast.ShowError("Ошибка при удалении");
+            Toast.ShowError(result.Error ?? "Ошибка при удалении");
         }
 
         _isBusy = false;
@@ -154,15 +154,15 @@ else
         }
 
         _isBusy = true;
-        var code = await ArchiveFunc(Id);
+        var result = await ArchiveFunc(Id);
 
-        if (code == ResultCode.Ok)
+        if (result.Result == ResultCode.Ok)
         {
             Nav.NavigateTo($"{ReturnUrl}/2");
         }
         else
         {
-            Toast.ShowError("Ошибка при архивации");
+            Toast.ShowError(result.Error ?? "Ошибка при архивации");
         }
 
         _isBusy = false;
@@ -176,15 +176,15 @@ else
         }
 
         _isBusy = true;
-        var code = await UnarchiveFunc(Id);
+        var result = await UnarchiveFunc(Id);
 
-        if (code == ResultCode.Ok)
+        if (result.Result == ResultCode.Ok)
         {
             Nav.NavigateTo($"{ReturnUrl}/1");
         }
         else
         {
-            Toast.ShowError("Ошибка при разархивации");
+            Toast.ShowError(result.Error ?? "Ошибка при разархивации");
         }
 
         _isBusy = false;

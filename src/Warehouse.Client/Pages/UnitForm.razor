@@ -10,11 +10,11 @@
           ReturnUrl="/units"
           LoadFunc="async id => await Api.GetUnit(id).ContinueWith(t => (t.Result.Result, t.Result.Response))"
           SaveFunc="async dto => (Id == Guid.Empty
-                                                     ? (await Api.CreateUnit(dto)).Result
-                                                     : (await Api.UpdateUnit(dto)).Result)"
-          DeleteFunc="async id => (await Api.DeleteUnit(id)).Result"
-          ArchiveFunc="async id => (await Api.ArchiveUnit(id)).Result"
-          UnarchiveFunc="async id => (await Api.UnarchiveUnit(id)).Result">
+                                                     ? (await Api.CreateUnit(dto))
+                                                     : (await Api.UpdateUnit(dto)))"
+          DeleteFunc="async id => (await Api.DeleteUnit(id))"
+          ArchiveFunc="async id => (await Api.ArchiveUnit(id))"
+          UnarchiveFunc="async id => (await Api.UnarchiveUnit(id))">
     <Template Context="model">
         <MudTextField Label="Наименование" @bind-Value="model.Name" />
     </Template>

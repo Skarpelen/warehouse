@@ -11,7 +11,7 @@ namespace Warehouse.Client.Services
     using Warehouse.Shared.DTO;
     using Warehouse.Shared.Filters;
 
-    public readonly record struct ActionResult(ResultCode Result);
+    public readonly record struct ActionResult(ResultCode Result, string? Error = null);
 
     public interface IApiAccess : IBalanceService, IClientService, IResourceService, IShipmentService, ISupplyService,
         IUnitService
@@ -25,6 +25,88 @@ namespace Warehouse.Client.Services
         private HttpClient Client => httpClientFactory.CreateClient(ApiClientName);
 
         #region Low‑level helpers
+
+        private static async Task<string?> ExtractErrorAsync(HttpResponseMessage response)
+        {
+            if (response.Content == null)
+            {
+                return null;
+            }
+
+            var raw = await response.Content.ReadAsStringAsync();
+
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return null;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(raw);
+                var root = doc.RootElement;
+
+                // Случай: сервер вернул JSON-строку:  "Текст ошибки"
+                if (root.ValueKind == JsonValueKind.String)
+                {
+                    return root.GetString();
+                }
+
+                // Случай: ProblemDetails / ValidationProblemDetails / произвольный объект
+                if (root.ValueKind == JsonValueKind.Object)
+                {
+                    if (root.TryGetProperty("errors", out var errorsElem) && errorsElem.ValueKind == JsonValueKind.Object)
+                    {
+                        var parts = new List<string>();
+
+                        foreach (var prop in errorsElem.EnumerateObject())
+                        {
+                            foreach (var item in prop.Value.EnumerateArray())
+                            {
+                                var msg = item.ValueKind == JsonValueKind.String ? item.GetString() : item.ToString();
+                                parts.Add($"{prop.Name}: {msg}");
+                            }
+                        }
+
+                        if (parts.Count > 0)
+                        {
+                            return string.Join("\n", parts);
+                        }
+                    }
+
+                    if (root.TryGetProperty("detail", out var detailElem) && detailElem.ValueKind == JsonValueKind.String)
+                    {
+                        return detailElem.GetString();
+                    }
+
+                    if (root.TryGetProperty("title", out var titleElem) && titleElem.ValueKind == JsonValueKind.String)
+                    {
+                        return titleElem.GetString();
+                    }
+
+                    if (root.TryGetProperty("message", out var messageElem) && messageElem.ValueKind == JsonValueKind.String)
+                    {
+                        return messageElem.GetString();
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            if (raw.Length >= 2 && raw[0] == '"' && raw[^1] == '"')
+            {
+                try
+                {
+                    return JsonSerializer.Deserialize<string>(raw);
+                }
+                catch
+                {
+                    return raw.Trim('"');
+                }
+            }
+
+            return raw;
+        }
 
         /// <summary>
         /// Safely reads JSON from an <see cref="HttpContent"/>. Returns <c>default</c> if the payload is empty or cannot be deserialized.
@@ -150,32 +232,32 @@ namespace Warehouse.Client.Services
 
         #region Public API wrappers
 
-        private async Task<ResultCode> DeleteAsync(string uri)
+        private async Task<(ResultCode, string?)> DeleteAsync(string uri)
         {
             var response = await Client.DeleteAsync(uri);
 
             if (response.IsSuccessStatusCode)
             {
-                return ResultCode.Ok;
+                return (ResultCode.Ok, null);
             }
-            else if (response.StatusCode == HttpStatusCode.Unauthorized)
+
+            var error = await ExtractErrorAsync(response);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                return ResultCode.Unauthorized;
+                return (ResultCode.Unauthorized, error);
             }
-            else
-            {
-                return ResultCode.Error;
-            }
+
+            return (ResultCode.Error, error);
         }
 
         private async Task<(ResultCode, TRes?)> GetAsync<TRes>(string uri)
         {
             var response = await Client.GetAsync(uri);
-
             return await MapResponseAsync<TRes>(response);
         }
 
-        private async Task<ResultCode> PostAsync<TBody>(string uri, TBody body)
+        private async Task<(ResultCode, string?)> PostAsync<TBody>(string uri, TBody body)
         {
             var json = JsonSerializer.Serialize(body);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -183,16 +265,17 @@ namespace Warehouse.Client.Services
 
             if (response.IsSuccessStatusCode)
             {
-                return ResultCode.Ok;
+                return (ResultCode.Ok, null);
             }
-            else if (response.StatusCode == HttpStatusCode.Unauthorized)
+
+            var error = await ExtractErrorAsync(response);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                return ResultCode.Unauthorized;
+                return (ResultCode.Unauthorized, error);
             }
-            else
-            {
-                return ResultCode.Error;
-            }
+
+            return (ResultCode.Error, error);
         }
 
         private async Task<(ResultCode, TRes?)> PostAsync<TBody, TRes>(string uri, TBody body)
@@ -204,25 +287,26 @@ namespace Warehouse.Client.Services
             return await MapResponseAsync<TRes>(response);
         }
 
-        private async Task<ResultCode> PostAsync(string uri)
+        private async Task<(ResultCode, string?)> PostAsync(string uri)
         {
             var response = await Client.PostAsync(uri, new StringContent(string.Empty));
 
             if (response.IsSuccessStatusCode)
             {
-                return ResultCode.Ok;
+                return (ResultCode.Ok, null);
             }
-            else if (response.StatusCode == HttpStatusCode.Unauthorized)
+
+            var error = await ExtractErrorAsync(response);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                return ResultCode.Unauthorized;
+                return (ResultCode.Unauthorized, error);
             }
-            else
-            {
-                return ResultCode.Error;
-            }
+
+            return (ResultCode.Error, error);
         }
 
-        private async Task<ResultCode> PutAsync<TBody>(string uri, TBody body)
+        private async Task<(ResultCode, string?)> PutAsync<TBody>(string uri, TBody body)
         {
             var json = JsonSerializer.Serialize(body);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -230,16 +314,17 @@ namespace Warehouse.Client.Services
 
             if (response.IsSuccessStatusCode)
             {
-                return ResultCode.Ok;
+                return (ResultCode.Ok, null);
             }
-            else if (response.StatusCode == HttpStatusCode.Unauthorized)
+
+            var error = await ExtractErrorAsync(response);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                return ResultCode.Unauthorized;
+                return (ResultCode.Unauthorized, error);
             }
-            else
-            {
-                return ResultCode.Error;
-            }
+
+            return (ResultCode.Error, error);
         }
 
         private async Task<(ResultCode, TRes?)> PutAsync<TBody, TRes>(string uri, TBody body)
@@ -273,34 +358,34 @@ namespace Warehouse.Client.Services
             return new GetClientResult(code, dto);
         }
 
-        public async Task<CreateClientResult> CreateClient(ClientDTO dto)
+        public async Task<ActionResult> CreateClient(ClientDTO dto)
         {
-            var (code, client) = await PostAsync<ClientDTO, ClientDTO>("client", dto);
-            return new CreateClientResult(code, client);
+            var (code, err) = await PostAsync("client", dto);
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> UpdateClient(ClientDTO dto)
         {
-            var code = await PutAsync($"client/{dto.Id}", dto);
-            return new ActionResult(code);
+            var (code, err) = await PutAsync($"client/{dto.Id}", dto);
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> DeleteClient(Guid id)
         {
-            var code = await DeleteAsync($"client/{id}");
-            return new ActionResult(code);
+            var (code, err) = await DeleteAsync($"client/{id}");
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> ArchiveClient(Guid id)
         {
-            var code = await PostAsync($"client/archive/{id}");
-            return new ActionResult(code);
+            var (code, err) = await PostAsync($"client/archive/{id}");
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> UnarchiveClient(Guid id)
         {
-            var code = await PostAsync($"client/unarchive/{id}");
-            return new ActionResult(code);
+            var (code, err) = await PostAsync($"client/unarchive/{id}");
+            return new ActionResult(code, err);
         }
 
         public async Task<GetResourcesResult> GetAllResources(bool includeArchived = false)
@@ -316,34 +401,34 @@ namespace Warehouse.Client.Services
             return new GetResourceResult(code, dto);
         }
 
-        public async Task<CreateResourceResult> CreateResource(ResourceDTO dto)
+        public async Task<ActionResult> CreateResource(ResourceDTO dto)
         {
-            var (code, resource) = await PostAsync<ResourceDTO, ResourceDTO>("resource", dto);
-            return new CreateResourceResult(code, resource);
+            var (code, err) = await PostAsync("resource", dto);
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> UpdateResource(ResourceDTO dto)
         {
-            var code = await PutAsync($"resource/{dto.Id}", dto);
-            return new ActionResult(code);
+            var (code, err) = await PutAsync($"resource/{dto.Id}", dto);
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> DeleteResource(Guid id)
         {
-            var code = await DeleteAsync($"resource/{id}");
-            return new ActionResult(code);
+            var (code, err) = await DeleteAsync($"resource/{id}");
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> ArchiveResource(Guid id)
         {
-            var code = await PostAsync($"resource/archive/{id}");
-            return new ActionResult(code);
+            var (code, err) = await PostAsync($"resource/archive/{id}");
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> UnarchiveResource(Guid id)
         {
-            var code = await PostAsync($"resource/unarchive/{id}");
-            return new ActionResult(code);
+            var (code, err) = await PostAsync($"resource/unarchive/{id}");
+            return new ActionResult(code, err);
         }
 
         public async Task<GetShipmentsResult> GetAllShipments(DocumentFilter filter)
@@ -367,26 +452,26 @@ namespace Warehouse.Client.Services
 
         public async Task<ActionResult> UpdateShipment(ShipmentDocumentDTO dto)
         {
-            var code = await PutAsync($"shipment/{dto.Id}", dto);
-            return new ActionResult(code);
+            var (code, err) = await PutAsync($"shipment/{dto.Id}", dto);
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> DeleteShipment(Guid id)
         {
-            var code = await DeleteAsync($"shipment/{id}");
-            return new ActionResult(code);
+            var (code, err) = await DeleteAsync($"shipment/{id}");
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> SignShipment(Guid id)
         {
-            var code = await PostAsync($"shipment/{id}/sign", string.Empty);
-            return new ActionResult(code);
+            var (code, err) = await PostAsync($"shipment/{id}/sign");
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> RevokeShipment(Guid id)
         {
-            var code = await PostAsync($"shipment/{id}/revoke", string.Empty);
-            return new ActionResult(code);
+            var (code, err) = await PostAsync($"shipment/{id}/revoke");
+            return new ActionResult(code, err);
         }
 
         public async Task<GetSuppliesResult> GetAllSupplies(DocumentFilter filter)
@@ -410,14 +495,14 @@ namespace Warehouse.Client.Services
 
         public async Task<ActionResult> UpdateSupply(SupplyDocumentDTO dto)
         {
-            var code = await PutAsync($"supply/{dto.Id}", dto);
-            return new ActionResult(code);
+            var (code, err) = await PutAsync($"supply/{dto.Id}", dto);
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> DeleteSupply(Guid id)
         {
-            var code = await DeleteAsync($"supply/{id}");
-            return new ActionResult(code);
+            var (code, err) = await DeleteAsync($"supply/{id}");
+            return new ActionResult(code, err);
         }
 
         public async Task<GetUnitsResult> GetAllUnits(bool includeArchived)
@@ -433,34 +518,34 @@ namespace Warehouse.Client.Services
             return new GetUnitResult(code, unit);
         }
 
-        public async Task<CreateUnitResult> CreateUnit(UnitDTO dto)
+        public async Task<ActionResult> CreateUnit(UnitDTO dto)
         {
-            var (code, unit) = await PostAsync<UnitDTO, UnitDTO>("unit", dto);
-            return new CreateUnitResult(code, unit);
+            var (code, err) = await PostAsync("unit", dto);
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> UpdateUnit(UnitDTO dto)
         {
-            var code = await PutAsync($"unit/{dto.Id}", dto);
-            return new ActionResult(code);
+            var (code, err) = await PutAsync($"unit/{dto.Id}", dto);
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> DeleteUnit(Guid id)
         {
-            var code = await DeleteAsync($"unit/{id}");
-            return new ActionResult(code);
+            var (code, err) = await DeleteAsync($"unit/{id}");
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> ArchiveUnit(Guid id)
         {
-            var code = await PostAsync($"unit/archive/{id}");
-            return new ActionResult(code);
+            var (code, err) = await PostAsync($"unit/archive/{id}");
+            return new ActionResult(code, err);
         }
 
         public async Task<ActionResult> UnarchiveUnit(Guid id)
         {
-            var code = await PostAsync($"unit/unarchive/{id}");
-            return new ActionResult(code);
+            var (code, err) = await PostAsync($"unit/unarchive/{id}");
+            return new ActionResult(code, err);
         }
     }
 }
