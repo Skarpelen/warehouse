@@ -70,6 +70,10 @@ namespace Warehouse.WebApi.V1
             {
                 return BadRequest(ex.Message);
             }
+            catch (KeyNotFoundException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut("{id:guid}")]

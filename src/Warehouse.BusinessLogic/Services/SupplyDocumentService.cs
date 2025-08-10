@@ -30,16 +30,14 @@ namespace Warehouse.BusinessLogic.Services
 
                 if (res.IsArchived)
                 {
-                    throw new InvalidOperationException(
-                        $"Cannot use archived resource '{res.Id}'.");
+                    throw new InvalidOperationException($"Нельзя использовать архивированный ресурс '{res.Name}'.");
                 }
 
                 var unit = await unitOfWork.UnitsOfMeasure.Get(item.UnitOfMeasureId);
 
                 if (unit.IsArchived)
                 {
-                    throw new InvalidOperationException(
-                        $"Cannot use archived unit '{unit.Id}'.");
+                    throw new InvalidOperationException($"Нельзя использовать архивированную единицу измерения '{unit.Name}'.");
                 }
             }
 
@@ -48,7 +46,7 @@ namespace Warehouse.BusinessLogic.Services
             if (exists.Any(x => x.Number == doc.Number))
             {
                 _log.Warn($"Duplicate supply number '{doc.Number}'.");
-                throw new InvalidOperationException($"Number '{doc.Number}' already exists.");
+                throw new InvalidOperationException($"Поступление с номером '{doc.Number}' уже существует.");
             }
 
             await unitOfWork.SupplyDocuments.Add(doc);
@@ -82,7 +80,7 @@ namespace Warehouse.BusinessLogic.Services
             if (document == null)
             {
                 _log.Warn($"Supply doc not found [Id={id}].");
-                throw new KeyNotFoundException($"Supply '{id}' not found.");
+                throw new KeyNotFoundException($"Поступление '{id}' не найдено.");
             }
 
             return document;
@@ -105,15 +103,16 @@ namespace Warehouse.BusinessLogic.Services
             if (allDocs.Any(d => d.Number == updated.Number && d.Id != id))
             {
                 _log.Warn($"Duplicate supply number '{updated.Number}'.");
-                throw new InvalidOperationException($"Number '{updated.Number}' already exists.");
+                throw new InvalidOperationException($"Поступление с номером '{updated.Number}' уже существует.");
             }
-
 
             await unitOfWork.BeginTransactionAsync();
 
             try
             {
-                var doc = await unitOfWork.SupplyDocuments.GetWithItemsAsync(id);
+                var doc = await unitOfWork.SupplyDocuments.GetWithItemsAsync(id)
+                          ?? throw new KeyNotFoundException($"Поступление '{id}' не найдено.");
+
                 doc.Number = updated.Number;
                 doc.Date = updated.Date;
 
@@ -121,24 +120,24 @@ namespace Warehouse.BusinessLogic.Services
 
                 foreach (var item in updated.Items)
                 {
-                    if (!existingIds.Contains(item.Id)
-                        || doc.Items.First(i => i.Id == item.Id).ResourceId != item.ResourceId
-                        || doc.Items.First(i => i.Id == item.Id).UnitOfMeasureId != item.UnitOfMeasureId)
+                    var isNewLine = !existingIds.Contains(item.Id);
+                    var changedRes = !isNewLine && doc.Items.First(i => i.Id == item.Id).ResourceId != item.ResourceId;
+                    var changedUnit = !isNewLine && doc.Items.First(i => i.Id == item.Id).UnitOfMeasureId != item.UnitOfMeasureId;
+
+                    if (isNewLine || changedRes || changedUnit)
                     {
                         var res = await unitOfWork.Resources.Get(item.ResourceId);
 
                         if (res.IsArchived)
                         {
-                            throw new InvalidOperationException(
-                                $"Cannot use archived resource '{res.Id}'.");
+                            throw new InvalidOperationException($"Нельзя использовать архивированный ресурс '{res.Name}'.");
                         }
 
                         var unit = await unitOfWork.UnitsOfMeasure.Get(item.UnitOfMeasureId);
 
                         if (unit.IsArchived)
                         {
-                            throw new InvalidOperationException(
-                                $"Cannot use archived unit '{unit.Id}'.");
+                            throw new InvalidOperationException($"Нельзя использовать архивированную единицу измерения '{unit.Name}'.");
                         }
                     }
                 }
@@ -148,6 +147,7 @@ namespace Warehouse.BusinessLogic.Services
                 var toRemove = doc.Items
                    .Where(it => !updated.Items.Any(u => u.Id == it.Id))
                    .ToList();
+
                 var adjustments = new List<BalanceAdjustment>();
 
                 foreach (var oldItem in toRemove)
@@ -162,8 +162,7 @@ namespace Warehouse.BusinessLogic.Services
 
                 foreach (var newItem in updated.Items)
                 {
-                    var existing = doc.Items
-                        .FirstOrDefault(it => it.Id == newItem.Id);
+                    var existing = doc.Items.FirstOrDefault(it => it.Id == newItem.Id);
 
                     if (existing == null)
                     {
@@ -231,10 +230,11 @@ namespace Warehouse.BusinessLogic.Services
         public async Task DeleteAsync(Guid id)
         {
             var document = await GetByIdAsync(id);
-            var items = document.Items ??
-                            Enumerable.Empty<SupplyItem>();
+            var items = document.Items ?? Enumerable.Empty<SupplyItem>();
 
-            var insuff = (await unitOfWork.Balances.GetAll())
+            var balances = await unitOfWork.Balances.GetAll();
+
+            var insuff = balances
                 .Where(b => items.Any(i =>
                     i.ResourceId == b.ResourceId
                     && i.UnitOfMeasureId == b.UnitOfMeasureId
@@ -243,8 +243,18 @@ namespace Warehouse.BusinessLogic.Services
 
             if (insuff.Any())
             {
+                var b = insuff.First();
+                var needItem = items.First(i => i.ResourceId == b.ResourceId && i.UnitOfMeasureId == b.UnitOfMeasureId);
+
+                var res = await unitOfWork.Resources.Get(b.ResourceId);
+                var unit = await unitOfWork.UnitsOfMeasure.Get(b.UnitOfMeasureId);
+
+                var resName = res?.Name ?? b.ResourceId.ToString();
+                var unitName = unit?.Name ?? b.UnitOfMeasureId.ToString();
+
                 throw new InvalidOperationException(
-                    "Insufficient stock to delete supply.");
+                    $"Недостаточно остатков для удаления поступления: ресурс '{resName}', ед. изм. '{unitName}'. " +
+                    $"Доступно {b.Quantity}, требуется {needItem.Quantity}.");
             }
 
             var removes = document.Items

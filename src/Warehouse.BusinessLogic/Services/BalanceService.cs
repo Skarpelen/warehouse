@@ -57,8 +57,14 @@ namespace Warehouse.BusinessLogic.Services
                 }
                 else
                 {
+                    var res = await unitOfWork.Resources.Get(adj.ResourceId);
+                    var unit = await unitOfWork.UnitsOfMeasure.Get(adj.UnitId);
+
+                    var resName = res?.Name ?? adj.ResourceId.ToString();
+                    var unitName = unit?.Name ?? adj.UnitId.ToString();
+
                     throw new InvalidOperationException(
-                        "Balance entry missing or insufficient stock.");
+                        $"Невозможно списать ресурс '{resName}' (ед. изм. '{unitName}'): остаток отсутствует.");
                 }
             }
 
@@ -75,11 +81,19 @@ namespace Warehouse.BusinessLogic.Services
                         .GetByResourceAndUnitAsync(adj.ResourceId, adj.UnitId);
 
                     var available = bal?.Quantity ?? 0m;
+
                     if (available + adj.Quantity < 0m)
                     {
+                        var need = -adj.Quantity;
+
+                        var res = await unitOfWork.Resources.Get(adj.ResourceId);
+                        var unit = await unitOfWork.UnitsOfMeasure.Get(adj.UnitId);
+
+                        var resName = res?.Name ?? adj.ResourceId.ToString();
+                        var unitName = unit?.Name ?? adj.UnitId.ToString();
+
                         throw new InvalidOperationException(
-                            $"Not enough resource '{adj.ResourceId}' " +
-                            $"(unit of measure '{adj.UnitId}') for quantity {adj.Quantity}.");
+                            $"Недостаточно ресурса '{resName}' (ед. изм. '{unitName}'): доступно {available}, требуется {need}.");
                     }
                 }
             }

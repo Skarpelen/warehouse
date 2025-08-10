@@ -29,7 +29,7 @@ namespace Warehouse.BusinessLogic.Services
             if (exist.Any(x => x.Name.Equals(newUnit.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 _log.Warn($"Duplicate unit '{newUnit.Name}'.");
-                throw new InvalidOperationException($"Unit '{newUnit.Name}' already exists.");
+                throw new InvalidOperationException($"Единица измерения с наименованием '{newUnit.Name}' уже существует.");
             }
 
             await unitOfWork.UnitsOfMeasure.Add(newUnit);
@@ -46,7 +46,7 @@ namespace Warehouse.BusinessLogic.Services
             if (unitOfMeasure == null)
             {
                 _log.Warn($"Unit not found [Id={id}].");
-                throw new KeyNotFoundException($"Unit '{id}' not found.");
+                throw new KeyNotFoundException($"Единица измерения с идентификатором '{id}' не найдена.");
             }
 
             return unitOfMeasure;
@@ -74,7 +74,7 @@ namespace Warehouse.BusinessLogic.Services
                 if (all.Any(x => x.Name.Equals(newUnit.Name, StringComparison.OrdinalIgnoreCase) && x.Id != id))
                 {
                     _log.Warn($"Rename to duplicate '{newUnit.Name}'.");
-                    throw new InvalidOperationException($"Unit '{newUnit.Name}' already exists.");
+                    throw new InvalidOperationException($"Единица измерения с наименованием '{newUnit.Name}' уже существует.");
                 }
             }
 
@@ -101,7 +101,7 @@ namespace Warehouse.BusinessLogic.Services
             if (isInUse)
             {
                 throw new InvalidOperationException(
-                    "Unit is in use and cannot be deleted. Consider archiving instead.");
+                    "Нельзя удалить единицу измерения: она используется в документах. Переведите в архив.");
             }
 
             await unitOfWork.UnitsOfMeasure.SoftDelete(id);

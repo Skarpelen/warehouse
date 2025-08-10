@@ -116,6 +116,7 @@ namespace Warehouse.WebApi.V1
 
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [EndpointSummary("Deletes a resource")]
         public async Task<IActionResult> Delete(Guid id)
@@ -131,6 +132,10 @@ namespace Warehouse.WebApi.V1
             catch (KeyNotFoundException)
             {
                 return NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
 

@@ -29,7 +29,7 @@ namespace Warehouse.BusinessLogic.Services
             if (exist.Any(x => x.Name.Equals(newResource.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 _log.Warn($"Duplicate resource '{newResource.Name}'.");
-                throw new InvalidOperationException($"Resource '{newResource.Name}' already exists.");
+                throw new InvalidOperationException($"Ресурс с наименованием '{newResource.Name}' уже существует.");
             }
 
             await unitOfWork.Resources.Add(newResource);
@@ -46,7 +46,7 @@ namespace Warehouse.BusinessLogic.Services
             if (resource == null)
             {
                 _log.Warn($"Resource not found [Id={id}].");
-                throw new KeyNotFoundException($"Resource '{id}' not found.");
+                throw new KeyNotFoundException($"Ресурс с идентификатором '{id}' не найден.");
             }
 
             return resource;
@@ -74,7 +74,7 @@ namespace Warehouse.BusinessLogic.Services
                 if (all.Any(x => x.Name.Equals(newResource.Name, StringComparison.OrdinalIgnoreCase) && x.Id != id))
                 {
                     _log.Warn($"Rename to duplicate '{newResource.Name}'.");
-                    throw new InvalidOperationException($"Resource '{newResource.Name}' already exists.");
+                    throw new InvalidOperationException($"Ресурс с наименованием '{newResource.Name}' уже существует.");
                 }
             }
 
@@ -101,7 +101,7 @@ namespace Warehouse.BusinessLogic.Services
             if (isInUse)
             {
                 throw new InvalidOperationException(
-                    "Resource is in use and cannot be deleted. Consider archiving instead.");
+                    "Нельзя удалить ресурс: он используется в документах. Переведите ресурс в архив.");
             }
 
             await unitOfWork.Resources.SoftDelete(id);

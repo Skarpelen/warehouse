@@ -39,6 +39,7 @@ namespace Warehouse.WebApi.V1
         public async Task<ActionResult<ClientDTO>> GetClient(Guid id)
         {
             _log.Trace("GetClient called for Id={Id}", id);
+
             try
             {
                 var client = await clientService.GetByIdAsync(id);
@@ -58,7 +59,7 @@ namespace Warehouse.WebApi.V1
         public async Task<ActionResult<ClientDTO>> CreateClient(ClientDTO dto)
         {
             _log.Trace("CreateClient called with Name={Name}", dto.Name);
-            var client = new Client
+            var model = new Client
             {
                 Name = dto.Name,
                 Address = dto.Address
@@ -66,7 +67,7 @@ namespace Warehouse.WebApi.V1
 
             try
             {
-                var created = await clientService.CreateAsync(client);
+                var created = await clientService.CreateAsync(model);
                 var resultDto = mapper.Map<ClientDTO>(created);
                 _log.Trace("CreateClient succeeded for Id={Id}", resultDto.Id);
                 return CreatedAtAction(nameof(GetClient), new { id = resultDto.Id, version = HttpContext.GetRequestedApiVersion()?.ToString() }, resultDto);
@@ -123,6 +124,7 @@ namespace Warehouse.WebApi.V1
 
         [HttpDelete("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [EndpointSummary("Deletes a client")]
         public async Task<IActionResult> Delete(Guid id)
@@ -138,6 +140,10 @@ namespace Warehouse.WebApi.V1
             catch (KeyNotFoundException)
             {
                 return NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
 

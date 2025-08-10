@@ -29,20 +29,19 @@ namespace Warehouse.BusinessLogic.Services
             if (exist.Any(x => x.Number == document.Number))
             {
                 _log.Warn($"Duplicate shipment number '{document.Number}'.");
-                throw new InvalidOperationException($"Number '{document.Number}' already exists.");
+                throw new InvalidOperationException($"Отгрузка с номером '{document.Number}' уже существует.");
             }
 
             if (document.Items == null || !document.Items.Any())
             {
-                throw new InvalidOperationException("Shipment cannot be empty.");
+                throw new InvalidOperationException("Отгрузка не может быть пустой.");
             }
 
             var client = await unitOfWork.Clients.Get(document.ClientId);
 
             if (client.IsArchived)
             {
-                throw new InvalidOperationException(
-                    $"Cannot use archived client '{client.Name}'.");
+                throw new InvalidOperationException($"Нельзя использовать архивированного клиента '{client.Name}'.");
             }
 
             foreach (var item in document.Items)
@@ -51,16 +50,14 @@ namespace Warehouse.BusinessLogic.Services
 
                 if (res.IsArchived)
                 {
-                    throw new InvalidOperationException(
-                        $"Cannot use archived resource '{res.Id}'.");
+                    throw new InvalidOperationException($"Нельзя использовать архивированный ресурс '{res.Name}'.");
                 }
 
                 var unit = await unitOfWork.UnitsOfMeasure.Get(item.UnitOfMeasureId);
 
                 if (unit.IsArchived)
                 {
-                    throw new InvalidOperationException(
-                        $"Cannot use archived unit '{unit.Id}'.");
+                    throw new InvalidOperationException($"Нельзя использовать архивированную единицу измерения '{unit.Name}'.");
                 }
             }
 
@@ -87,7 +84,7 @@ namespace Warehouse.BusinessLogic.Services
             if (document == null)
             {
                 _log.Warn($"Shipment not found [Id={id}].");
-                throw new KeyNotFoundException($"Shipment '{id}' not found.");
+                throw new KeyNotFoundException($"Отгрузка '{id}' не найдена.");
             }
 
             return document;
@@ -107,7 +104,7 @@ namespace Warehouse.BusinessLogic.Services
         {
             if (updated.Items == null || !updated.Items.Any())
             {
-                throw new InvalidOperationException("Shipment cannot be empty.");
+                throw new InvalidOperationException("Отгрузка не может быть пустой.");
             }
 
             await unitOfWork.BeginTransactionAsync();
@@ -115,11 +112,11 @@ namespace Warehouse.BusinessLogic.Services
             try
             {
                 var doc = await unitOfWork.ShipmentDocuments.GetWithItemsAsync(id)
-                          ?? throw new KeyNotFoundException($"Shipment '{id}' not found.");
+                          ?? throw new KeyNotFoundException($"Отгрузка '{id}' не найдена.");
 
                 if (doc.Status == ShipmentStatus.Signed)
                 {
-                    throw new InvalidOperationException("Cannot edit signed shipments.");
+                    throw new InvalidOperationException("Нельзя редактировать подписанную отгрузку.");
                 }
 
                 if (doc.ClientId != updated.ClientId)
@@ -128,8 +125,7 @@ namespace Warehouse.BusinessLogic.Services
 
                     if (client.IsArchived)
                     {
-                        throw new InvalidOperationException(
-                            $"Cannot use archived client '{client.Name}'.");
+                        throw new InvalidOperationException($"Нельзя использовать архивированного клиента '{client.Name}'.");
                     }
                 }
 
@@ -137,24 +133,24 @@ namespace Warehouse.BusinessLogic.Services
 
                 foreach (var item in updated.Items)
                 {
-                    if (!existingIds.Contains(item.Id)
-                        || doc.Items.First(i => i.Id == item.Id).ResourceId != item.ResourceId
-                        || doc.Items.First(i => i.Id == item.Id).UnitOfMeasureId != item.UnitOfMeasureId)
+                    var isNewLine = !existingIds.Contains(item.Id);
+                    var changedRes = !isNewLine && doc.Items.First(i => i.Id == item.Id).ResourceId != item.ResourceId;
+                    var changedUnit = !isNewLine && doc.Items.First(i => i.Id == item.Id).UnitOfMeasureId != item.UnitOfMeasureId;
+
+                    if (isNewLine || changedRes || changedUnit)
                     {
                         var res = await unitOfWork.Resources.Get(item.ResourceId);
 
                         if (res.IsArchived)
                         {
-                            throw new InvalidOperationException(
-                                $"Cannot use archived resource '{res.Id}'.");
+                            throw new InvalidOperationException($"Нельзя использовать архивированный ресурс '{res.Name}'.");
                         }
 
                         var unit = await unitOfWork.UnitsOfMeasure.Get(item.UnitOfMeasureId);
 
                         if (unit.IsArchived)
                         {
-                            throw new InvalidOperationException(
-                                $"Cannot use archived unit '{unit.Id}'.");
+                            throw new InvalidOperationException($"Нельзя использовать архивированную единицу измерения '{unit.Name}'.");
                         }
                     }
                 }
@@ -166,7 +162,7 @@ namespace Warehouse.BusinessLogic.Services
                     if (all.Any(x => x.Number == updated.Number && x.Id != id))
                     {
                         _log.Warn($"Duplicate number '{updated.Number}'.");
-                        throw new InvalidOperationException($"Number '{updated.Number}' already exists.");
+                        throw new InvalidOperationException($"Отгрузка с номером '{updated.Number}' уже существует.");
                     }
                 }
 
@@ -248,8 +244,7 @@ namespace Warehouse.BusinessLogic.Services
             {
                 if (document.Status != ShipmentStatus.Signed)
                 {
-                    throw new InvalidOperationException(
-                        "Can revoke only signed.");
+                    throw new InvalidOperationException("Можно отозвать только подписанную отгрузку.");
                 }
 
                 var adjusts = document.Items
@@ -261,13 +256,11 @@ namespace Warehouse.BusinessLogic.Services
             }
             else
             {
-                throw new InvalidOperationException(
-                    "Invalid status transition.");
+                throw new InvalidOperationException("Недопустимое изменение статуса отгрузки.");
             }
 
             document.Status = newStatus;
 
-            //await unitOfWork.ShipmentDocuments.Update(document);
             await unitOfWork.CompleteAsync();
 
             _log.Info($"Shipment status changed [Id={id}].");

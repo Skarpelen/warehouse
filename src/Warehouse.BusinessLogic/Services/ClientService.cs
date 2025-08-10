@@ -29,7 +29,7 @@ namespace Warehouse.BusinessLogic.Services
             if (clients.Any(c => c.Name.Equals(newClient.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 _log.Warn($"Attempt to create duplicate client with name '{newClient.Name}'.");
-                throw new InvalidOperationException($"Client with name '{newClient.Name}' already exists.");
+                throw new InvalidOperationException($"Клиент с наименованием '{newClient.Name}' уже существует.");
             }
 
             await unitOfWork.Clients.Add(newClient);
@@ -47,7 +47,7 @@ namespace Warehouse.BusinessLogic.Services
             if (client == null)
             {
                 _log.Warn($"Client not found [Id={id}].");
-                throw new KeyNotFoundException($"Client with id '{id}' not found.");
+                throw new KeyNotFoundException($"Клиент с идентификатором '{id}' не найден.");
             }
 
             return client;
@@ -77,7 +77,7 @@ namespace Warehouse.BusinessLogic.Services
                 if (clients.Any(c => c.Name.Equals(newClient.Name, StringComparison.OrdinalIgnoreCase) && c.Id != id))
                 {
                     _log.Warn($"Attempt to rename client to duplicate name '{newClient.Name}'.");
-                    throw new InvalidOperationException($"Client with name '{newClient.Name}' already exists.");
+                    throw new InvalidOperationException($"Клиент с наименованием '{newClient.Name}' уже существует.");
                 }
             }
 
@@ -105,7 +105,7 @@ namespace Warehouse.BusinessLogic.Services
             if (isInUse)
             {
                 throw new InvalidOperationException(
-                    "Client is in use and cannot be deleted. Consider archiving instead.");
+                    "Нельзя удалить клиента: он используется в документах. Переведите клиента в архив.");
             }
 
             await unitOfWork.Clients.SoftDelete(id);
